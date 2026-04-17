@@ -78,6 +78,11 @@ final class ConfigPullController implements ContainerInjectionInterface {
       return $this->authError($request, 'diff', $authResult, $start);
     }
 
+    if (!$this->requireJsonContentType($request)) {
+      $this->audit->log($request, 'diff', 'error', 415, 0, microtime(TRUE) - $start);
+      return new JsonResponse(['error' => 'unsupported_media_type', 'detail' => 'Content-Type must be application/json'], 415);
+    }
+
     $body = json_decode($request->getContent(), TRUE);
     if (!is_array($body) || !isset($body['hashes']) || !is_array($body['hashes'])) {
       $this->audit->log($request, 'diff', 'error', 400, 0, microtime(TRUE) - $start);
@@ -164,6 +169,11 @@ final class ConfigPullController implements ContainerInjectionInterface {
       return $this->authError($request, 'export', $authResult, $start);
     }
 
+    if (!$this->requireJsonContentType($request)) {
+      $this->audit->log($request, 'export', 'error', 415, 0, microtime(TRUE) - $start);
+      return new JsonResponse(['error' => 'unsupported_media_type', 'detail' => 'Content-Type must be application/json'], 415);
+    }
+
     $body = json_decode($request->getContent(), TRUE);
     if (!is_array($body) || !isset($body['names']) || !is_array($body['names'])) {
       $this->audit->log($request, 'export', 'error', 400, 0, microtime(TRUE) - $start);
@@ -226,6 +236,11 @@ final class ConfigPullController implements ContainerInjectionInterface {
     $code = $authResult['code'];
     $this->audit->log($request, $operation, $authResult['error'], $code, 0, microtime(TRUE) - $start);
     return new JsonResponse(['error' => $authResult['error']], $code);
+  }
+
+  private function requireJsonContentType(Request $request): bool {
+    $contentType = $request->headers->get('Content-Type', '');
+    return str_starts_with($contentType, 'application/json');
   }
 
 }

@@ -1,0 +1,81 @@
+<?php
+
+declare(strict_types=1);
+
+use Drupal\Core\Site\Settings;
+
+/**
+ * Implements hook_requirements().
+ */
+function config_pull_requirements(string $phase): array {
+  $requirements = [];
+
+  if ($phase !== 'runtime') {
+    return $requirements;
+  }
+
+  $settings = Settings::get('config_pull', []);
+
+  $requirements['config_pull_server'] = [
+    'title' => t('Config Pull: Server'),
+    'value' => !empty($settings['server_enabled']) ? t('Enabled') : t('Disabled'),
+    'severity' => !empty($settings['server_enabled']) ? REQUIREMENT_OK : REQUIREMENT_INFO,
+  ];
+
+  if (empty($settings['server_enabled'])) {
+    $requirements['config_pull_server']['description'] = t('Set $settings[\'config_pull\'][\'server_enabled\'] = TRUE in settings.php to enable.');
+    return $requirements;
+  }
+
+  $secret = $settings['secret'] ?? '';
+  if ($secret === '') {
+    $requirements['config_pull_secret'] = [
+      'title' => t('Config Pull: Shared secret'),
+      'value' => t('Not configured'),
+      'description' => t('Set $settings[\'config_pull\'][\'secret\'] in settings.php.'),
+      'severity' => REQUIREMENT_ERROR,
+    ];
+  }
+  elseif (strlen($secret) < 32) {
+    $requirements['config_pull_secret'] = [
+      'title' => t('Config Pull: Shared secret'),
+      'value' => t('Too short'),
+      'description' => t('The shared secret must be at least 32 characters.'),
+      'severity' => REQUIREMENT_ERROR,
+    ];
+  }
+  elseif (in_array($secret, ['generate-a-real-secret-here', 'changeme', 'secret'], TRUE)) {
+    $requirements['config_pull_secret'] = [
+      'title' => t('Config Pull: Shared secret'),
+      'value' => t('Default placeholder detected'),
+      'description' => t('Replace the placeholder secret with a real, random value.'),
+      'severity' => REQUIREMENT_ERROR,
+    ];
+  }
+  else {
+    $requirements['config_pull_secret'] = [
+      'title' => t('Config Pull: Shared secret'),
+      'value' => t('Configured'),
+      'severity' => REQUIREMENT_OK,
+    ];
+  }
+
+  $allowedIps = $settings['allowed_ips'] ?? [];
+  $requirements['config_pull_ip'] = [
+    'title' => t('Config Pull: IP allowlist'),
+    'value' => empty($allowedIps) ? t('All IPs allowed (no restriction)') : t('@count rule(s)', ['@count' => count($allowedIps)]),
+    'severity' => empty($allowedIps) ? REQUIREMENT_WARNING : REQUIREMENT_OK,
+  ];
+  if (empty($allowedIps)) {
+    $requirements['config_pull_ip']['description'] = t('Consider restricting access with $settings[\'config_pull\'][\'allowed_ips\'].');
+  }
+
+  $redactRules = $settings['redact'] ?? [];
+  $requirements['config_pull_redaction'] = [
+    'title' => t('Config Pull: Redaction rules'),
+    'value' => empty($redactRules) ? t('None configured') : t('@count rule(s)', ['@count' => count($redactRules)]),
+    'severity' => empty($redactRules) ? REQUIREMENT_WARNING : REQUIREMENT_OK,
+  ];
+
+  return $requirements;
+}

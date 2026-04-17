@@ -122,7 +122,7 @@ final class ConfigPullControllerTest extends TestCase {
         'deleted.item' => 'ddd',
       ],
     ]);
-    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], [], $body);
+    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
 
     $response = $this->controller->diff($request);
     $this->assertSame(200, $response->getStatusCode());
@@ -143,7 +143,7 @@ final class ConfigPullControllerTest extends TestCase {
     $this->hashCache->method('getHashes')->willReturn($hashes);
 
     $body = json_encode(['hashes' => $hashes]);
-    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], [], $body);
+    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
 
     $response = $this->controller->diff($request);
     $this->assertSame(304, $response->getStatusCode());
@@ -153,7 +153,7 @@ final class ConfigPullControllerTest extends TestCase {
    * @covers ::diff
    */
   public function testDiffRejectsInvalidBody(): void {
-    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], [], 'not json');
+    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], 'not json');
     $response = $this->controller->diff($request);
     $this->assertSame(400, $response->getStatusCode());
   }
@@ -167,10 +167,23 @@ final class ConfigPullControllerTest extends TestCase {
       $hashes["item.$i"] = str_repeat('a', 64);
     }
     $body = json_encode(['hashes' => $hashes]);
-    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], [], $body);
+    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
 
     $response = $this->controller->diff($request);
     $this->assertSame(400, $response->getStatusCode());
+  }
+
+  /**
+   * @covers ::diff
+   */
+  public function testDiffRejects415WithoutJsonContentType(): void {
+    $body = json_encode(['hashes' => ['system.site' => 'aaa']]);
+    $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], [], $body);
+
+    $response = $this->controller->diff($request);
+    $this->assertSame(415, $response->getStatusCode());
+    $data = json_decode($response->getContent(), TRUE);
+    $this->assertSame('unsupported_media_type', $data['error']);
   }
 
   /**
@@ -214,7 +227,7 @@ final class ConfigPullControllerTest extends TestCase {
     $this->exportService->method('buildTarGz')->willReturn($tempFile);
 
     $body = json_encode(['names' => ['system.site']]);
-    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], [], $body);
+    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
 
     $response = $this->controller->export($request);
     $this->assertInstanceOf(BinaryFileResponse::class, $response);
@@ -229,7 +242,7 @@ final class ConfigPullControllerTest extends TestCase {
    */
   public function testExportRejectsEmptyNames(): void {
     $body = json_encode(['names' => []]);
-    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], [], $body);
+    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
 
     $response = $this->controller->export($request);
     $this->assertSame(400, $response->getStatusCode());
@@ -240,7 +253,7 @@ final class ConfigPullControllerTest extends TestCase {
    */
   public function testExportRejectsMissingNames(): void {
     $body = json_encode(['other' => 'data']);
-    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], [], $body);
+    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
 
     $response = $this->controller->export($request);
     $this->assertSame(400, $response->getStatusCode());
@@ -253,7 +266,7 @@ final class ConfigPullControllerTest extends TestCase {
     $this->exportService->method('getItems')->willReturn([]);
 
     $body = json_encode(['names' => ['nonexistent']]);
-    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], [], $body);
+    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
 
     $response = $this->controller->export($request);
     $this->assertSame(404, $response->getStatusCode());
@@ -320,9 +333,22 @@ final class ConfigPullControllerTest extends TestCase {
     );
 
     $body = json_encode(['names' => ['system.site']]);
-    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], [], $body);
+    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
     $response = $controller->export($request);
     $this->assertSame(503, $response->getStatusCode());
+  }
+
+  /**
+   * @covers ::export
+   */
+  public function testExportRejects415WithoutJsonContentType(): void {
+    $body = json_encode(['names' => ['system.site']]);
+    $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], [], $body);
+
+    $response = $this->controller->export($request);
+    $this->assertSame(415, $response->getStatusCode());
+    $data = json_decode($response->getContent(), TRUE);
+    $this->assertSame('unsupported_media_type', $data['error']);
   }
 
 }
