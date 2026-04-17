@@ -45,3 +45,19 @@ services:
       - '@state'
     tags:
       - { name: event_subscriber }
+
+  config_pull.client:
+    class: Drupal\config_pull\Service\RemoteClient
+    arguments:
+      - '@http_client'
+
+  config_pull.diff:
+    class: Drupal\config_pull\Service\ConfigDiffService
+    arguments:
+      - '@config_pull.config_hash'
+
+  config_pull.transfer:
+    class: Drupal\config_pull\Service\TransferService
+    arguments:
+      - '@config_pull.client'
+      - '@config_pull.diff'

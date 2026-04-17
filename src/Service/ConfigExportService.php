@@ -55,11 +55,11 @@ class ConfigExportService {
   }
 
   /**
-   * Returns a single redacted config item.
+   * Returns a single redacted config item with its hash.
    *
    * @return array|null
-   *   Redacted config data, or NULL if the item does not exist or is
-   *   fully redacted.
+   *   Array with 'data' and 'hash' keys, or NULL if the item does not exist
+   *   or is fully redacted.
    */
   public function getItem(string $name): ?array {
     if ($this->redactionService->shouldRedactEntirely($name)) {
@@ -69,7 +69,11 @@ class ConfigExportService {
     if ($data === FALSE) {
       return NULL;
     }
-    return $this->redactionService->redact($name, $data);
+    $redacted = $this->redactionService->redact($name, $data);
+    return [
+      'data' => $redacted,
+      'hash' => $this->hashService->hash($redacted),
+    ];
   }
 
   /**

@@ -120,8 +120,9 @@ final class ConfigExportServiceTest extends TestCase {
       ->willReturn(['smtp_host' => 'h', 'smtp_password' => 'secret']);
 
     $result = $this->service->getItem('smtp.settings');
-    $this->assertSame('CONFIG_PULL_REDACTED', $result['smtp_password']);
-    $this->assertSame('h', $result['smtp_host']);
+    $this->assertSame('CONFIG_PULL_REDACTED', $result['data']['smtp_password']);
+    $this->assertSame('h', $result['data']['smtp_host']);
+    $this->assertArrayHasKey('hash', $result);
   }
 
   /**
