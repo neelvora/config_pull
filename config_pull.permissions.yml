@@ -1,0 +1,4 @@
+export configuration via config pull:
+  title: 'Export configuration via Config Pull'
+  description: 'Allows access to the Config Pull server endpoints for remote configuration export.'
+  restrict access: true

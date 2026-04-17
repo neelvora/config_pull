@@ -1,0 +1,17 @@
+{
+    "name": "drupal/config_pull",
+    "description": "Pull Drupal configuration from a remote site without downloading the database.",
+    "type": "drupal-module",
+    "license": "GPL-2.0-or-later",
+    "homepage": "https://www.drupal.org/project/config_pull",
+    "minimum-stability": "dev",
+    "require": {
+        "drupal/core": "^10.2 || ^11"
+    },
+    "extra": {
+        "drupal": {
+            "version": "1.0.x-dev",
+            "datestamp": "1713350400"
+        }
+    }
+}

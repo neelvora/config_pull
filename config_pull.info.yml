@@ -1,0 +1,7 @@
+name: Config Pull
+type: module
+description: Pull Drupal configuration from a remote site without downloading the database.
+package: Development
+core_version_requirement: ^10.2 || ^11
+php: 8.1
+lifecycle: experimental

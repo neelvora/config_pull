@@ -1,0 +1,50 @@
+config_pull.handshake:
+  path: '/config-pull/handshake'
+  defaults:
+    _controller: '\Drupal\config_pull\Controller\ConfigPullController::handshake'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+  options:
+    no_cache: TRUE
+
+config_pull.diff:
+  path: '/config-pull/diff'
+  defaults:
+    _controller: '\Drupal\config_pull\Controller\ConfigPullController::diff'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+  options:
+    no_cache: TRUE
+
+config_pull.item:
+  path: '/config-pull/item/{name}'
+  defaults:
+    _controller: '\Drupal\config_pull\Controller\ConfigPullController::item'
+  requirements:
+    _access: 'TRUE'
+    name: '[a-zA-Z0-9_.-]+'
+  methods: [GET]
+  options:
+    no_cache: TRUE
+
+config_pull.export:
+  path: '/config-pull/export'
+  defaults:
+    _controller: '\Drupal\config_pull\Controller\ConfigPullController::export'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+  options:
+    no_cache: TRUE
+
+config_pull.export_full:
+  path: '/config-pull/export/full'
+  defaults:
+    _controller: '\Drupal\config_pull\Controller\ConfigPullController::exportFull'
+  requirements:
+    _access: 'TRUE'
+  methods: [GET]
+  options:
+    no_cache: TRUE

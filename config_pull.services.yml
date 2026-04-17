@@ -1,0 +1,47 @@
+services:
+  config_pull.config_hash:
+    class: Drupal\config_pull\Service\ConfigHashService
+
+  config_pull.redaction:
+    class: Drupal\config_pull\Service\RedactionService
+
+  config_pull.config_export:
+    class: Drupal\config_pull\Service\ConfigExportService
+    arguments:
+      - '@config.storage.export'
+      - '@config_pull.config_hash'
+      - '@config_pull.redaction'
+
+  config_pull.hash_cache:
+    class: Drupal\config_pull\Service\ConfigHashCacheService
+    arguments:
+      - '@cache.default'
+      - '@config_pull.config_export'
+      - '@state'
+      - '@lock'
+
+  config_pull.authentication:
+    class: Drupal\config_pull\Service\AuthenticationService
+    arguments:
+      - '@keyvalue.expirable'
+      - '@flood'
+      - '@datetime.time'
+      - '@state'
+
+  config_pull.audit:
+    class: Drupal\config_pull\Service\AuditService
+    arguments:
+      - '@logger.factory'
+
+  config_pull.response_subscriber:
+    class: Drupal\config_pull\EventSubscriber\ResponseSubscriber
+    tags:
+      - { name: event_subscriber }
+
+  config_pull.config_change_subscriber:
+    class: Drupal\config_pull\EventSubscriber\ConfigChangeSubscriber
+    arguments:
+      - '@cache_tags.invalidator'
+      - '@state'
+    tags:
+      - { name: event_subscriber }

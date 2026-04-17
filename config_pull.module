@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * @file
+ * Config Pull module.
+ */
+
+declare(strict_types=1);
