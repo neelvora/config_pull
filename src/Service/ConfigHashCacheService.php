@@ -14,7 +14,7 @@ use Drupal\Core\State\StateInterface;
  * The hash cache is invalidated by ConfigChangeSubscriber when config changes.
  * A monotonic hash_version counter in State tracks generations.
  */
-final class ConfigHashCacheService {
+class ConfigHashCacheService {
 
   private const CACHE_CID = 'config_pull:hashes';
 
