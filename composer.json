@@ -6,7 +6,7 @@
     "homepage": "https://www.drupal.org/project/config_pull",
     "minimum-stability": "dev",
     "require": {
-        "drupal/core": "^10.2 || ^11"
+        "drupal/core": "^10.3 || ^11"
     },
     "extra": {
         "drupal": {
