@@ -9,6 +9,7 @@ use Drupal\config_pull\Exception\RemoteNetworkException;
 use Drupal\config_pull\Exception\RemoteRateLimitException;
 use Drupal\config_pull\Exception\RemoteServerException;
 use Drupal\config_pull\Exception\TransferInterruptedException;
+use Drupal\config_pull\Drush\WizardPrompter;
 use Drupal\config_pull\Service\ConfigDiffService;
 use Drupal\config_pull\Service\RemoteClient;
 use Drupal\config_pull\Service\TransferService;
@@ -25,6 +26,28 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
 
   use SiteAliasManagerAwareTrait {
     setSiteAliasManager as traitSetSiteAliasManager;
+  }
+
+  private ?WizardPrompter $prompter = NULL;
+
+  public function setPrompter(WizardPrompter $prompter): void {
+    $this->prompter = $prompter;
+  }
+
+  private function prompter(): WizardPrompter {
+    if ($this->prompter === NULL) {
+      $io = $this->io();
+      $this->prompter = new class($io) implements WizardPrompter {
+        public function __construct(private readonly \Symfony\Component\Console\Style\StyleInterface $io) {}
+        public function ask(string $question, ?string $default = NULL): ?string {
+          return $this->io->ask($question, $default);
+        }
+        public function confirm(string $question, bool $default = TRUE): bool {
+          return $this->io->confirm($question, $default);
+        }
+      };
+    }
+    return $this->prompter;
   }
 
   public function __construct(
@@ -388,20 +411,20 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
   public function setup(): void {
     $this->io()->title('Config Pull Setup');
 
-    $remoteName = $this->io()->ask('Remote name', 'prod');
-    $uri = $this->io()->ask('Remote URI (e.g. https://www.example.com)');
+    $remoteName = $this->prompter()->ask('Remote name', 'prod');
+    $uri = $this->prompter()->ask('Remote URI (e.g. https://www.example.com)');
     if (empty($uri)) {
       $this->io()->error('URI is required.');
       return;
     }
 
-    $generateSecret = $this->io()->confirm('Generate a shared secret?', TRUE);
+    $generateSecret = $this->prompter()->confirm('Generate a shared secret?', TRUE);
     if ($generateSecret) {
       $secret = bin2hex(random_bytes(32));
       $this->io()->text("Generated secret: $secret");
     }
     else {
-      $secret = $this->io()->ask('Enter the shared secret');
+      $secret = $this->prompter()->ask('Enter the shared secret');
       if (empty($secret)) {
         $this->io()->error('Secret is required.');
         return;
@@ -410,7 +433,7 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
 
     $this->printSetupSnippets($remoteName, $uri, $secret);
 
-    $testConnection = $this->io()->confirm('Test connectivity now?', TRUE);
+    $testConnection = $this->prompter()->confirm('Test connectivity now?', TRUE);
     if (!$testConnection) {
       return;
     }

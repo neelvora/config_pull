@@ -382,4 +382,100 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertSame("normal text with\nnewlines\tand tabs", $result);
   }
 
+  public function testWizardGeneratesSnippetsWithProvidedSecret(): void {
+    $this->commands->setPrompter(new TestWizardPrompter([
+      'asks' => ['staging', 'https://staging.example.com', 'manual-secret-value'],
+      'confirms' => [FALSE, FALSE],
+    ]));
+
+    $this->commands->setup();
+    $out = $this->output->fetch();
+
+    $this->assertStringContainsString("'staging'", $out);
+    $this->assertStringContainsString("'uri' => 'https://staging.example.com'", $out);
+    $this->assertStringContainsString("'secret' => 'manual-secret-value'", $out);
+  }
+
+  public function testWizardGeneratesRandomSecretWhenRequested(): void {
+    $this->commands->setPrompter(new TestWizardPrompter([
+      'asks' => ['prod', 'https://example.com'],
+      'confirms' => [TRUE, FALSE],
+    ]));
+
+    $this->commands->setup();
+    $out = $this->output->fetch();
+
+    $this->assertStringContainsString('Generated secret:', $out);
+    $this->assertStringContainsString("'prod'", $out);
+    $this->assertStringContainsString("'uri' => 'https://example.com'", $out);
+  }
+
+  public function testWizardAbortsWhenUriEmpty(): void {
+    $this->commands->setPrompter(new TestWizardPrompter([
+      'asks' => ['prod', ''],
+      'confirms' => [],
+    ]));
+
+    $this->commands->setup();
+    $out = $this->output->fetch();
+
+    $this->assertStringContainsString('URI is required', $out);
+    $this->assertStringNotContainsString('Generated secret', $out);
+  }
+
+  public function testWizardAbortsWhenManualSecretEmpty(): void {
+    $this->commands->setPrompter(new TestWizardPrompter([
+      'asks' => ['prod', 'https://example.com', ''],
+      'confirms' => [FALSE],
+    ]));
+
+    $this->commands->setup();
+    $out = $this->output->fetch();
+
+    $this->assertStringContainsString('Secret is required', $out);
+  }
+
+  public function testWizardRunsHandshakeWhenConfirmed(): void {
+    $this->client->expects($this->once())
+      ->method('handshake')
+      ->with('prod')
+      ->willReturn(['server_version' => '1.0.0', 'config_count' => 42]);
+
+    $this->commands->setPrompter(new TestWizardPrompter([
+      'asks' => ['prod', 'https://example.com'],
+      'confirms' => [TRUE, TRUE],
+    ]));
+
+    $this->commands->setup();
+    $out = $this->output->fetch();
+
+    $this->assertStringContainsString('Connected. Server v1.0.0, 42 configs', $out);
+  }
+
+}
+
+final class TestWizardPrompter implements \Drupal\config_pull\Drush\WizardPrompter {
+
+  private array $asks;
+  private array $confirms;
+
+  public function __construct(array $answers) {
+    $this->asks = $answers['asks'] ?? [];
+    $this->confirms = $answers['confirms'] ?? [];
+  }
+
+  public function ask(string $question, ?string $default = NULL): ?string {
+    if (empty($this->asks)) {
+      return $default;
+    }
+    return array_shift($this->asks);
+  }
+
+  public function confirm(string $question, bool $default = TRUE): bool {
+    if (empty($this->confirms)) {
+      return $default;
+    }
+    return (bool) array_shift($this->confirms);
+  }
+
 }
