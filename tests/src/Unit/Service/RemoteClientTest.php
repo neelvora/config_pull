@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\config_pull\Unit\Service;
 
+use Drupal\config_pull\Exception\RemoteAuthenticationException;
+use Drupal\config_pull\Exception\RemoteNetworkException;
+use Drupal\config_pull\Exception\RemoteRateLimitException;
+use Drupal\config_pull\Exception\RemoteServerException;
 use Drupal\config_pull\Service\RemoteClient;
 use Drupal\Core\Site\Settings;
 use GuzzleHttp\Client;
@@ -79,7 +83,7 @@ final class RemoteClientTest extends TestCase {
       ],
     ]);
     $this->expectException(\InvalidArgumentException::class);
-    $this->expectExceptionMessage("missing 'uri' or 'secret'");
+    $this->expectExceptionMessage("missing 'uri'");
     $this->client->getRemoteConfig('bad');
   }
 
@@ -189,31 +193,36 @@ final class RemoteClientTest extends TestCase {
     $this->assertStringEndsWith('/config-pull/export/full', (string) $request->getUri());
   }
 
-  public function testAuthenticationFailureThrowsRuntimeException(): void {
+  public function testAuthenticationFailureThrowsAuthException(): void {
     $this->mockHandler->append(new Response(401, [], '{"error":"authentication_failed"}'));
 
-    $this->expectException(\RuntimeException::class);
+    $this->expectException(RemoteAuthenticationException::class);
     $this->expectExceptionMessage('401');
     $this->client->handshake('staging');
   }
 
-  public function testRateLimitThrowsRuntimeException(): void {
-    $this->mockHandler->append(new Response(429, [], '{"error":"rate_limited"}'));
+  public function testRateLimitThrowsRateLimitException(): void {
+    $this->mockHandler->append(new Response(429, [], '{"error":"rate_limited","retry_after":30}'));
 
-    $this->expectException(\RuntimeException::class);
-    $this->expectExceptionMessage('429');
-    $this->client->handshake('staging');
+    try {
+      $this->client->handshake('staging');
+      $this->fail('Expected RemoteRateLimitException');
+    }
+    catch (RemoteRateLimitException $e) {
+      $this->assertSame(30, $e->retryAfter);
+      $this->assertStringContainsString('429', $e->getMessage());
+    }
   }
 
-  public function testServerErrorThrowsRuntimeException(): void {
+  public function testServerErrorThrowsServerException(): void {
     $this->mockHandler->append(new Response(503, [], 'Service Unavailable'));
 
-    $this->expectException(\RuntimeException::class);
+    $this->expectException(RemoteServerException::class);
     $this->expectExceptionMessage('503');
     $this->client->handshake('staging');
   }
 
-  public function testConnectionTimeoutThrowsRuntimeException(): void {
+  public function testConnectionTimeoutThrowsNetworkException(): void {
     $this->mockHandler->append(
       new \GuzzleHttp\Exception\ConnectException(
         'Connection timed out',
@@ -221,8 +230,16 @@ final class RemoteClientTest extends TestCase {
       ),
     );
 
-    $this->expectException(\RuntimeException::class);
+    $this->expectException(RemoteNetworkException::class);
     $this->expectExceptionMessage('Connection failed');
+    $this->client->handshake('staging');
+  }
+
+  public function testForbiddenThrowsAuthException(): void {
+    $this->mockHandler->append(new Response(403, [], '{"error":"access_denied"}'));
+
+    $this->expectException(RemoteAuthenticationException::class);
+    $this->expectExceptionMessage('403');
     $this->client->handshake('staging');
   }
 
@@ -233,6 +250,56 @@ final class RemoteClientTest extends TestCase {
     $options = $this->requestHistory[0]['options'];
     $this->assertSame(15, $options['timeout']);
     $this->assertFalse($options['verify']);
+  }
+
+  public function testGetRemoteConfigStripsAtPrefix(): void {
+    new Settings([
+      'config_pull_remotes' => [
+        'prod' => ['uri' => 'https://prod.example.com', 'secret' => 'abc'],
+      ],
+    ]);
+    $config = $this->client->getRemoteConfig('@prod');
+    $this->assertSame('https://prod.example.com', $config['uri']);
+  }
+
+  public function testGetRemoteConfigResolvesAlias(): void {
+    new Settings([
+      'config_pull_remotes' => [
+        'prod' => ['alias' => '@prod.live', 'secret' => 'abc'],
+      ],
+    ]);
+
+    $alias = $this->createMock(\Consolidation\SiteAlias\SiteAliasInterface::class);
+    $alias->method('get')->with('uri', '')->willReturn('https://alias.example.com');
+
+    $aliasManager = $this->createMock(\Consolidation\SiteAlias\SiteAliasManagerInterface::class);
+    $aliasManager->method('get')->with('@prod.live')->willReturn($alias);
+
+    $client = new \Drupal\config_pull\Service\RemoteClient($this->createMock(\GuzzleHttp\ClientInterface::class));
+    $client->setAliasManager($aliasManager);
+    $config = $client->getRemoteConfig('prod');
+    $this->assertSame('https://alias.example.com', $config['uri']);
+  }
+
+  public function testGetRemoteConfigSettingsUriWinsOverAlias(): void {
+    new Settings([
+      'config_pull_remotes' => [
+        'prod' => ['uri' => 'https://direct.example.com', 'alias' => '@prod.live', 'secret' => 'abc'],
+      ],
+    ]);
+    $config = $this->client->getRemoteConfig('prod');
+    $this->assertSame('https://direct.example.com', $config['uri']);
+  }
+
+  public function testGetRemoteConfigAliasWithoutManagerThrows(): void {
+    new Settings([
+      'config_pull_remotes' => [
+        'prod' => ['alias' => '@prod.live', 'secret' => 'abc'],
+      ],
+    ]);
+    $this->expectException(\RuntimeException::class);
+    $this->expectExceptionMessage('SiteAliasManager is not available');
+    $this->client->getRemoteConfig('prod');
   }
 
 }
