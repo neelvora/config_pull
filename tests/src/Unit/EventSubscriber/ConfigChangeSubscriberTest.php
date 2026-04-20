@@ -10,12 +10,12 @@ use Drupal\Core\Config\ConfigCrudEvent;
 use Drupal\Core\Config\ConfigEvents;
 use Drupal\Core\Config\ConfigRenameEvent;
 use Drupal\Core\State\StateInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversDefaultClass \Drupal\config_pull\EventSubscriber\ConfigChangeSubscriber
- * @group config_pull
- */
+#[CoversClass(ConfigChangeSubscriber::class)]
+#[Group('config_pull')]
 final class ConfigChangeSubscriberTest extends TestCase {
 
   private CacheTagsInvalidatorInterface $cacheTagsInvalidator;
@@ -32,9 +32,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     );
   }
 
-  /**
-   * @covers ::getSubscribedEvents
-   */
   public function testSubscribedEvents(): void {
     $events = ConfigChangeSubscriber::getSubscribedEvents();
     $this->assertArrayHasKey(ConfigEvents::SAVE, $events);
@@ -42,9 +39,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->assertArrayHasKey(ConfigEvents::RENAME, $events);
   }
 
-  /**
-   * @covers ::onConfigChange
-   */
   public function testSaveInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')
       ->with('config_pull.hash_version')
@@ -62,9 +56,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigChange($event);
   }
 
-  /**
-   * @covers ::onConfigChange
-   */
   public function testDeleteInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')->willReturn(0);
 
@@ -80,9 +71,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigChange($event);
   }
 
-  /**
-   * @covers ::onConfigRename
-   */
   public function testRenameInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')->willReturn(10);
 
@@ -98,9 +86,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigRename($event);
   }
 
-  /**
-   * @covers ::onConfigChange
-   */
   public function testVersionDefaultsToZeroWhenNotSet(): void {
     $this->state->method('get')->willReturn(NULL);
 

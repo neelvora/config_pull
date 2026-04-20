@@ -9,12 +9,12 @@ use Drupal\config_pull\Service\ConfigHashCacheService;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Lock\LockBackendInterface;
 use Drupal\Core\State\StateInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversDefaultClass \Drupal\config_pull\Service\ConfigHashCacheService
- * @group config_pull
- */
+#[CoversClass(ConfigHashCacheService::class)]
+#[Group('config_pull')]
 final class ConfigHashCacheServiceTest extends TestCase {
 
   private CacheBackendInterface $cache;
@@ -37,9 +37,6 @@ final class ConfigHashCacheServiceTest extends TestCase {
     );
   }
 
-  /**
-   * @covers ::getHashes
-   */
   public function testCacheHitReturnsCachedHashes(): void {
     $hashes = ['system.site' => 'abc123'];
     $cacheItem = new \stdClass();
@@ -54,9 +51,6 @@ final class ConfigHashCacheServiceTest extends TestCase {
     $this->assertSame($hashes, $this->service->getHashes());
   }
 
-  /**
-   * @covers ::getHashes
-   */
   public function testCacheMissRebuilds(): void {
     $hashes = ['system.site' => 'abc123', 'system.date' => 'def456'];
 
@@ -79,9 +73,6 @@ final class ConfigHashCacheServiceTest extends TestCase {
     $this->assertSame($hashes, $this->service->getHashes());
   }
 
-  /**
-   * @covers ::getHashes
-   */
   public function testStampedeWaitsAndReadsCacheAfterRebuild(): void {
     $hashes = ['system.site' => 'abc123'];
     $cacheItem = new \stdClass();
@@ -99,9 +90,6 @@ final class ConfigHashCacheServiceTest extends TestCase {
     $this->assertSame($hashes, $this->service->getHashes());
   }
 
-  /**
-   * @covers ::getHashes
-   */
   public function testStampedeFallsBackOnLockTimeout(): void {
     $hashes = ['system.site' => 'abc123'];
 
@@ -116,9 +104,6 @@ final class ConfigHashCacheServiceTest extends TestCase {
     $this->assertSame($hashes, $this->service->getHashes());
   }
 
-  /**
-   * @covers ::getHashVersion
-   */
   public function testGetHashVersionReturnsStateValue(): void {
     $this->state->method('get')
       ->with('config_pull.hash_version')
@@ -127,17 +112,11 @@ final class ConfigHashCacheServiceTest extends TestCase {
     $this->assertSame(42, $this->service->getHashVersion());
   }
 
-  /**
-   * @covers ::getHashVersion
-   */
   public function testGetHashVersionDefaultsToZero(): void {
     $this->state->method('get')->willReturn(NULL);
     $this->assertSame(0, $this->service->getHashVersion());
   }
 
-  /**
-   * @covers ::invalidate
-   */
   public function testInvalidate(): void {
     $this->cache->expects($this->once())
       ->method('invalidate')
@@ -146,9 +125,6 @@ final class ConfigHashCacheServiceTest extends TestCase {
     $this->service->invalidate();
   }
 
-  /**
-   * @covers ::getHashes
-   */
   public function testRebuildReleasesLockOnException(): void {
     $this->cache->method('get')->willReturn(FALSE);
     $this->lock->method('acquire')->willReturn(TRUE);

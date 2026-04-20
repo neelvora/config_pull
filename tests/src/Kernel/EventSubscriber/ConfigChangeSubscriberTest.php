@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace Drupal\Tests\config_pull\Kernel\EventSubscriber;
 
 use Drupal\KernelTests\KernelTestBase;
+use PHPUnit\Framework\Attributes\Group;
 
-/**
- * @group config_pull
- */
+#[Group('config_pull')]
 final class ConfigChangeSubscriberTest extends KernelTestBase {
 
   protected static $modules = ['system', 'config_pull'];

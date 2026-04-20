@@ -11,13 +11,13 @@ use Drupal\Core\KeyValueStore\KeyValueExpirableFactoryInterface;
 use Drupal\Core\KeyValueStore\KeyValueStoreExpirableInterface;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\State\StateInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
-/**
- * @coversDefaultClass \Drupal\config_pull\Service\AuthenticationService
- * @group config_pull
- */
+#[CoversClass(AuthenticationService::class)]
+#[Group('config_pull')]
 final class AuthenticationServiceTest extends TestCase {
 
   private KeyValueExpirableFactoryInterface $kvFactory;
@@ -62,9 +62,6 @@ final class AuthenticationServiceTest extends TestCase {
     ]);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testValidRequestSucceeds(): void {
     $request = $this->makeSignedRequest('POST', '/config-pull/handshake', '{}');
     $result = $this->service->validateRequest($request);
@@ -72,9 +69,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertFalse($result['using_previous_secret']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testEmergencyKillSwitch(): void {
     $this->state = $this->createMock(StateInterface::class);
     $this->state->method('get')
@@ -90,9 +84,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame('service_unavailable', $result['error']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testServerNotEnabled(): void {
     new Settings(['config_pull' => ['server_enabled' => FALSE]]);
     $request = $this->makeSignedRequest('POST', '/config-pull/handshake', '{}');
@@ -101,9 +92,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame(503, $result['code']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testTlsRequired(): void {
     $request = $this->makeSignedRequest('POST', '/config-pull/handshake', '{}', secure: FALSE);
     $result = $this->service->validateRequest($request);
@@ -112,9 +100,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame('tls_required', $result['error']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testAllowInsecureBypassesTls(): void {
     new Settings([
       'config_pull' => [
@@ -128,9 +113,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertTrue($result['valid']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testIpNotInAllowlist(): void {
     new Settings([
       'config_pull' => [
@@ -146,9 +128,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame('ip_denied', $result['error']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testIpInCidrAllowlist(): void {
     new Settings([
       'config_pull' => [
@@ -162,9 +141,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertTrue($result['valid']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testExactIpMatch(): void {
     new Settings([
       'config_pull' => [
@@ -178,9 +154,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertTrue($result['valid']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testRateLimited(): void {
     $flood = $this->createMock(FloodInterface::class);
     $flood->method('isAllowed')
@@ -197,9 +170,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame('rate_limited', $result['error']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testAuthFailureLockout(): void {
     $flood = $this->createMock(FloodInterface::class);
     $flood->method('isAllowed')
@@ -216,9 +186,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame('auth_lockout', $result['error']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testMissingAuthHeaders(): void {
     $request = Request::create(
       'https://example.com/config-pull/handshake',
@@ -234,9 +201,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame(401, $result['code']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testTimestampOutOfRange(): void {
     $nonce = bin2hex(random_bytes(32));
     $staleTimestamp = '999000';
@@ -262,9 +226,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame(401, $result['code']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testInvalidNonceFormat(): void {
     $timestamp = '1000000';
     $nonce = 'not-a-valid-nonce';
@@ -290,9 +251,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame(401, $result['code']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testInvalidSignature(): void {
     $timestamp = '1000000';
     $nonce = bin2hex(random_bytes(32));
@@ -316,9 +274,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame(401, $result['code']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testPreviousSecretAccepted(): void {
     $previousSecret = 'old-secret-also-at-least-32-chars-long';
     new Settings([
@@ -337,9 +292,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertTrue($result['using_previous_secret']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testNonceReplayRejected(): void {
     $this->nonceStore->method('get')->willReturn(TRUE);
 
@@ -349,9 +301,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->assertSame(401, $result['code']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testNonceStoredAfterSuccess(): void {
     $this->nonceStore->expects($this->once())
       ->method('setWithExpire')
@@ -365,18 +314,12 @@ final class AuthenticationServiceTest extends TestCase {
     $this->service->validateRequest($request);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testGetRequestWithEmptyBody(): void {
     $request = $this->makeSignedRequest('GET', '/config-pull/export/full', '');
     $result = $this->service->validateRequest($request);
     $this->assertTrue($result['valid']);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testFloodRegisteredOnSuccess(): void {
     $this->flood->expects($this->once())
       ->method('register')
@@ -386,9 +329,6 @@ final class AuthenticationServiceTest extends TestCase {
     $this->service->validateRequest($request);
   }
 
-  /**
-   * @covers ::validateRequest
-   */
   public function testAuthFailureRegistersFlood(): void {
     $this->flood->expects($this->once())
       ->method('register')
@@ -408,6 +348,89 @@ final class AuthenticationServiceTest extends TestCase {
     $request->headers->set('X-Config-Pull-Signature', str_repeat('b', 64));
 
     $this->service->validateRequest($request);
+  }
+
+  public function testMissingSignatureOnly(): void {
+    $timestamp = '1000000';
+    $nonce = bin2hex(random_bytes(32));
+    $body = '{}';
+
+    $request = Request::create(
+      'https://example.com/config-pull/handshake',
+      'POST',
+      [],
+      [],
+      [],
+      ['HTTPS' => 'on'],
+      $body,
+    );
+    $request->headers->set('X-Config-Pull-Timestamp', $timestamp);
+    $request->headers->set('X-Config-Pull-Nonce', $nonce);
+
+    $result = $this->service->validateRequest($request);
+    $this->assertFalse($result['valid']);
+    $this->assertSame(401, $result['code']);
+  }
+
+  public function testMissingTimestampOnly(): void {
+    $nonce = bin2hex(random_bytes(32));
+    $body = '{}';
+    $payload = implode("\n", ['POST', '/config-pull/handshake', '', $nonce, $body]);
+    $signature = hash_hmac('sha256', $payload, $this->secret);
+
+    $request = Request::create(
+      'https://example.com/config-pull/handshake',
+      'POST',
+      [],
+      [],
+      [],
+      ['HTTPS' => 'on'],
+      $body,
+    );
+    $request->headers->set('X-Config-Pull-Nonce', $nonce);
+    $request->headers->set('X-Config-Pull-Signature', $signature);
+
+    $result = $this->service->validateRequest($request);
+    $this->assertFalse($result['valid']);
+    $this->assertSame(401, $result['code']);
+  }
+
+  public function testEmptyAllowlistPermitsAll(): void {
+    new Settings([
+      'config_pull' => [
+        'server_enabled' => TRUE,
+        'secret' => $this->secret,
+        'allowed_ips' => [],
+      ],
+    ]);
+    $request = $this->makeSignedRequest('POST', '/config-pull/handshake', '{}');
+    $result = $this->service->validateRequest($request);
+    $this->assertTrue($result['valid']);
+  }
+
+  public function testRateLimitAllowedWhenUnderThreshold(): void {
+    $request = $this->makeSignedRequest('POST', '/config-pull/handshake', '{}');
+    $result = $this->service->validateRequest($request);
+    $this->assertTrue($result['valid']);
+    $this->assertArrayNotHasKey('code', $result);
+  }
+
+  public function testRotatedSecretFullyRejected(): void {
+    $wrongSecret = 'completely-wrong-secret-at-least-32-chars-here';
+    new Settings([
+      'config_pull' => [
+        'server_enabled' => TRUE,
+        'secret' => $this->secret,
+        'previous_secret' => 'old-secret-also-at-least-32-chars-long',
+      ],
+    ]);
+    $request = $this->makeSignedRequest(
+      'POST', '/config-pull/handshake', '{}',
+      secret: $wrongSecret,
+    );
+    $result = $this->service->validateRequest($request);
+    $this->assertFalse($result['valid']);
+    $this->assertSame(401, $result['code']);
   }
 
   private function makeSignedRequest(

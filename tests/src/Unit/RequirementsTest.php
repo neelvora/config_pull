@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace Drupal\Tests\config_pull\Unit;
 
 use Drupal\Core\Site\Settings;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversDefaultClass \config_pull_requirements
- * @group config_pull
- */
+#[Group('config_pull')]
 class RequirementsTest extends TestCase {
 
   protected function setUp(): void {

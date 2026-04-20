@@ -6,14 +6,14 @@ namespace Drupal\Tests\config_pull\Unit\Service;
 
 use Drupal\config_pull\Service\AuditService;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
-/**
- * @coversDefaultClass \Drupal\config_pull\Service\AuditService
- * @group config_pull
- */
+#[CoversClass(AuditService::class)]
+#[Group('config_pull')]
 final class AuditServiceTest extends TestCase {
 
   private LoggerInterface $logger;
@@ -27,9 +27,6 @@ final class AuditServiceTest extends TestCase {
     $this->service = new AuditService($factory);
   }
 
-  /**
-   * @covers ::log
-   */
   public function testSuccessLogsInfo(): void {
     $this->logger->expects($this->once())
       ->method('info')
@@ -48,9 +45,6 @@ final class AuditServiceTest extends TestCase {
     $this->service->log($request, 'handshake', 'success', 200);
   }
 
-  /**
-   * @covers ::log
-   */
   public function testFailureLogsWarning(): void {
     $this->logger->expects($this->once())
       ->method('warning')
@@ -66,9 +60,6 @@ final class AuditServiceTest extends TestCase {
     $this->service->log($request, 'handshake', 'auth_failed', 401);
   }
 
-  /**
-   * @covers ::log
-   */
   public function testContextIncludesAllFields(): void {
     $nonce = bin2hex(random_bytes(32));
     $this->logger->expects($this->once())
@@ -95,9 +86,6 @@ final class AuditServiceTest extends TestCase {
     $this->service->log($request, 'export', 'success', 200, 42, 0.15);
   }
 
-  /**
-   * @covers ::log
-   */
   public function testMissingHeadersDefaultGracefully(): void {
     $this->logger->expects($this->once())
       ->method('warning')
