@@ -129,4 +129,32 @@ class ConfigExportService {
     return $path;
   }
 
+  public function listCollections(): array {
+    return $this->exportStorage->getAllCollectionNames();
+  }
+
+  public function getCollectionHashes(string $collection): array {
+    $storage = $this->exportStorage->createCollection($collection);
+    $names = $storage->listAll();
+    $items = $storage->readMultiple($names);
+    return $this->hashService->hashMultiple($items);
+  }
+
+  public function getCollectionItem(string $collection, string $name): ?array {
+    $storage = $this->exportStorage->createCollection($collection);
+    $data = $storage->read($name);
+    if ($data === FALSE) {
+      return NULL;
+    }
+    return [
+      'data' => $data,
+      'hash' => $this->hashService->hash($data),
+    ];
+  }
+
+  public function getCollectionItems(string $collection, array $names): array {
+    $storage = $this->exportStorage->createCollection($collection);
+    return $storage->readMultiple($names);
+  }
+
 }

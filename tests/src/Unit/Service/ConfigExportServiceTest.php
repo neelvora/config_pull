@@ -10,12 +10,12 @@ use Drupal\config_pull\Service\ConfigHashService;
 use Drupal\config_pull\Service\RedactionService;
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Site\Settings;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @coversDefaultClass \Drupal\config_pull\Service\ConfigExportService
- * @group config_pull
- */
+#[CoversClass(ConfigExportService::class)]
+#[Group('config_pull')]
 final class ConfigExportServiceTest extends TestCase {
 
   private ConfigExportService $service;
@@ -33,9 +33,6 @@ final class ConfigExportServiceTest extends TestCase {
     );
   }
 
-  /**
-   * @covers ::getConfigCount
-   */
   public function testGetConfigCount(): void {
     $this->storage->method('listAll')->willReturn([
       'system.site',
@@ -45,9 +42,6 @@ final class ConfigExportServiceTest extends TestCase {
     $this->assertSame(3, $this->service->getConfigCount());
   }
 
-  /**
-   * @covers ::listConfigNames
-   */
   public function testListConfigNamesExcludesFullyRedacted(): void {
     new Settings(['config_pull' => ['redact' => [
       'secret.config' => TRUE,
@@ -61,17 +55,11 @@ final class ConfigExportServiceTest extends TestCase {
     $this->assertSame(['system.site', 'node.settings'], $names);
   }
 
-  /**
-   * @covers ::listConfigNames
-   */
   public function testListConfigNamesNoRedaction(): void {
     $this->storage->method('listAll')->willReturn(['system.site', 'system.date']);
     $this->assertSame(['system.site', 'system.date'], $this->service->listConfigNames());
   }
 
-  /**
-   * @covers ::computeAllHashes
-   */
   public function testComputeAllHashes(): void {
     $items = [
       'system.site' => ['name' => 'Test'],
@@ -87,9 +75,6 @@ final class ConfigExportServiceTest extends TestCase {
     $this->assertSame($hashService->hash($items['system.site']), $hashes['system.site']);
   }
 
-  /**
-   * @covers ::computeAllHashes
-   */
   public function testComputeAllHashesWithRedaction(): void {
     new Settings(['config_pull' => ['redact' => [
       'smtp.settings' => ['smtp_password'],
@@ -108,9 +93,6 @@ final class ConfigExportServiceTest extends TestCase {
     $this->assertSame($hashService->hash($redacted), $hashes['smtp.settings']);
   }
 
-  /**
-   * @covers ::getItem
-   */
   public function testGetItemReturnsRedactedData(): void {
     new Settings(['config_pull' => ['redact' => [
       'smtp.settings' => ['smtp_password'],
@@ -125,17 +107,11 @@ final class ConfigExportServiceTest extends TestCase {
     $this->assertArrayHasKey('hash', $result);
   }
 
-  /**
-   * @covers ::getItem
-   */
   public function testGetItemReturnsNullForMissing(): void {
     $this->storage->method('read')->willReturn(FALSE);
     $this->assertNull($this->service->getItem('nonexistent'));
   }
 
-  /**
-   * @covers ::getItem
-   */
   public function testGetItemReturnsNullForFullyRedacted(): void {
     new Settings(['config_pull' => ['redact' => [
       'secret.config' => TRUE,
@@ -143,9 +119,6 @@ final class ConfigExportServiceTest extends TestCase {
     $this->assertNull($this->service->getItem('secret.config'));
   }
 
-  /**
-   * @covers ::getItems
-   */
   public function testGetItemsExcludesFullyRedacted(): void {
     new Settings(['config_pull' => ['redact' => [
       'secret.config' => TRUE,
@@ -159,9 +132,6 @@ final class ConfigExportServiceTest extends TestCase {
     $this->assertArrayHasKey('system.site', $result);
   }
 
-  /**
-   * @covers ::getAllItems
-   */
   public function testGetAllItems(): void {
     $items = [
       'system.site' => ['name' => 'Test'],
@@ -174,9 +144,6 @@ final class ConfigExportServiceTest extends TestCase {
     $this->assertSame($items, $result);
   }
 
-  /**
-   * @covers ::buildTarGz
-   */
   public function testBuildTarGzCreatesValidArchive(): void {
     $items = [
       'system.site' => ['name' => 'Test'],
@@ -200,9 +167,6 @@ final class ConfigExportServiceTest extends TestCase {
     @unlink($path);
   }
 
-  /**
-   * @covers ::buildTarGz
-   */
   public function testBuildTarGzIdempotent(): void {
     $items = ['system.site' => ['name' => 'Test']];
     $path1 = $this->service->buildTarGz($items);
@@ -214,9 +178,6 @@ final class ConfigExportServiceTest extends TestCase {
     @unlink($path2);
   }
 
-  /**
-   * @covers ::buildTarGz
-   */
   public function testBuildTarGzEmptyReturnsPath(): void {
     $path = $this->service->buildTarGz([]);
     // Archive_Tar does not create a file when no entries are added.

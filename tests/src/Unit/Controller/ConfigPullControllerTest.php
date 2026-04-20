@@ -9,16 +9,17 @@ use Drupal\config_pull\Service\AuditService;
 use Drupal\config_pull\Service\AuthenticationService;
 use Drupal\config_pull\Service\ConfigExportService;
 use Drupal\config_pull\Service\ConfigHashCacheService;
+use Drupal\Core\Site\Settings;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * @coversDefaultClass \Drupal\config_pull\Controller\ConfigPullController
- * @group config_pull
- */
+#[CoversClass(ConfigPullController::class)]
+#[Group('config_pull')]
 final class ConfigPullControllerTest extends TestCase {
 
   private AuthenticationService $auth;
@@ -43,11 +44,10 @@ final class ConfigPullControllerTest extends TestCase {
       $this->hashCache,
       $this->audit,
     );
+
+    new Settings(['config_pull' => []]);
   }
 
-  /**
-   * @covers ::handshake
-   */
   public function testHandshakeReturnsServerInfo(): void {
     $this->exportService->method('getConfigCount')->willReturn(150);
     $this->hashCache->method('getHashVersion')->willReturn(7);
@@ -62,12 +62,11 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(1, $data['protocol_version']);
     $this->assertSame(150, $data['config_count']);
     $this->assertSame(7, $data['hash_version']);
+    $this->assertFalse($data['supports_translations']);
+    $this->assertTrue($data['supports_hash_cache']);
     $this->assertArrayNotHasKey('warning', $data);
   }
 
-  /**
-   * @covers ::handshake
-   */
   public function testHandshakeWithPreviousSecretWarning(): void {
     $this->auth = $this->createMock(AuthenticationService::class);
     $this->auth->method('validateRequest')
@@ -85,9 +84,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertArrayHasKey('warning', $data);
   }
 
-  /**
-   * @covers ::handshake
-   */
   public function testHandshakeAuthFailure(): void {
     $this->auth = $this->createMock(AuthenticationService::class);
     $this->auth->method('validateRequest')
@@ -104,9 +100,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame('authentication_failed', $data['error']);
   }
 
-  /**
-   * @covers ::diff
-   */
   public function testDiffReturnsChanges(): void {
     $this->hashCache->method('getHashes')->willReturn([
       'system.site' => 'aaa',
@@ -135,9 +128,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(5, $data['hash_version']);
   }
 
-  /**
-   * @covers ::diff
-   */
   public function testDiffReturns304WhenUnchanged(): void {
     $hashes = ['system.site' => 'aaa'];
     $this->hashCache->method('getHashes')->willReturn($hashes);
@@ -149,18 +139,12 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(304, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::diff
-   */
   public function testDiffRejectsInvalidBody(): void {
     $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], 'not json');
     $response = $this->controller->diff($request);
     $this->assertSame(400, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::diff
-   */
   public function testDiffRejectsTooManyHashes(): void {
     $hashes = [];
     for ($i = 0; $i < 10001; $i++) {
@@ -173,9 +157,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(400, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::diff
-   */
   public function testDiffRejects415WithoutJsonContentType(): void {
     $body = json_encode(['hashes' => ['system.site' => 'aaa']]);
     $request = Request::create('https://example.com/config-pull/diff', 'POST', [], [], [], [], $body);
@@ -186,9 +167,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame('unsupported_media_type', $data['error']);
   }
 
-  /**
-   * @covers ::item
-   */
   public function testItemReturnsYaml(): void {
     $this->exportService->method('getItem')
       ->with('system.site')
@@ -203,9 +181,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertStringContainsString('name:', $response->getContent());
   }
 
-  /**
-   * @covers ::item
-   */
   public function testItemNotFound(): void {
     $this->exportService->method('getItem')->willReturn(NULL);
 
@@ -215,9 +190,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(404, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::export
-   */
   public function testExportReturnsTarGz(): void {
     $this->exportService->method('getItems')
       ->willReturn(['system.site' => ['name' => 'Test']]);
@@ -237,9 +209,6 @@ final class ConfigPullControllerTest extends TestCase {
     @unlink($tempFile);
   }
 
-  /**
-   * @covers ::export
-   */
   public function testExportRejectsEmptyNames(): void {
     $body = json_encode(['names' => []]);
     $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
@@ -248,9 +217,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(400, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::export
-   */
   public function testExportRejectsMissingNames(): void {
     $body = json_encode(['other' => 'data']);
     $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], ['CONTENT_TYPE' => 'application/json'], $body);
@@ -259,9 +225,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(400, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::export
-   */
   public function testExportReturns404WhenNoItemsFound(): void {
     $this->exportService->method('getItems')->willReturn([]);
 
@@ -272,9 +235,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(404, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::exportFull
-   */
   public function testExportFullReturnsTarGz(): void {
     $this->exportService->method('getAllItems')
       ->willReturn(['system.site' => ['name' => 'Test']]);
@@ -292,9 +252,6 @@ final class ConfigPullControllerTest extends TestCase {
     @unlink($tempFile);
   }
 
-  /**
-   * @covers ::exportFull
-   */
   public function testExportFullEmptyReturnsJson(): void {
     $this->exportService->method('getAllItems')->willReturn([]);
 
@@ -305,9 +262,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(200, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::diff
-   */
   public function testDiffAuthFailureReturns401(): void {
     $this->auth = $this->createMock(AuthenticationService::class);
     $this->auth->method('validateRequest')
@@ -321,9 +275,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(401, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::export
-   */
   public function testExportAuthFailureReturns503(): void {
     $this->auth = $this->createMock(AuthenticationService::class);
     $this->auth->method('validateRequest')
@@ -338,9 +289,6 @@ final class ConfigPullControllerTest extends TestCase {
     $this->assertSame(503, $response->getStatusCode());
   }
 
-  /**
-   * @covers ::export
-   */
   public function testExportRejects415WithoutJsonContentType(): void {
     $body = json_encode(['names' => ['system.site']]);
     $request = Request::create('https://example.com/config-pull/export', 'POST', [], [], [], [], $body);

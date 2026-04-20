@@ -9,6 +9,7 @@ use Drupal\config_pull\Service\AuthenticationService;
 use Drupal\config_pull\Service\ConfigExportService;
 use Drupal\config_pull\Service\ConfigHashCacheService;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Site\Settings;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -53,6 +54,8 @@ final class ConfigPullController implements ContainerInjectionInterface {
       return $this->authError($request, 'handshake', $authResult, $start);
     }
 
+    $settings = Settings::get('config_pull', []);
+
     $data = [
       'server_version' => self::SERVER_VERSION,
       'protocol_version' => self::PROTOCOL_VERSION,
@@ -61,6 +64,8 @@ final class ConfigPullController implements ContainerInjectionInterface {
       'config_count' => $this->exportService->getConfigCount(),
       'hash_version' => $this->hashCache->getHashVersion(),
       'supported_features' => ['diff', 'export', 'export_full'],
+      'supports_translations' => !empty($settings['include_translations']),
+      'supports_hash_cache' => TRUE,
     ];
 
     if ($authResult['using_previous_secret']) {
@@ -135,6 +140,13 @@ final class ConfigPullController implements ContainerInjectionInterface {
       'hash_version' => $this->hashCache->getHashVersion(),
     ];
 
+    $includeTranslations = !empty($body['include_translations']);
+    $serverAllows = !empty(Settings::get('config_pull', [])['include_translations']);
+    if ($includeTranslations && $serverAllows) {
+      $clientCollections = $body['collection_hashes'] ?? [];
+      $data['collections'] = $this->computeCollectionDiffs($clientCollections);
+    }
+
     $this->audit->log($request, 'diff', 'success', 200, $totalItems, microtime(TRUE) - $start);
     return new JsonResponse($data);
   }
@@ -146,7 +158,13 @@ final class ConfigPullController implements ContainerInjectionInterface {
       return $this->authError($request, 'item', $authResult, $start);
     }
 
-    $item = $this->exportService->getItem($name);
+    $collection = $request->query->get('collection', '');
+    if ($collection !== '') {
+      $item = $this->exportService->getCollectionItem($collection, $name);
+    }
+    else {
+      $item = $this->exportService->getItem($name);
+    }
     if ($item === NULL) {
       $this->audit->log($request, 'item', 'error', 404, 0, microtime(TRUE) - $start);
       return new JsonResponse(['error' => 'not_found', 'detail' => 'Config item not found'], 404);
@@ -227,6 +245,65 @@ final class ConfigPullController implements ContainerInjectionInterface {
 
     $this->audit->log($request, 'export_full', 'success', 200, count($items), microtime(TRUE) - $start);
     return $response;
+  }
+
+  private function computeCollectionDiffs(array $clientCollections): array {
+    $result = [];
+    $serverCollections = $this->exportService->listCollections();
+
+    foreach ($serverCollections as $collection) {
+      $serverHashes = $this->exportService->getCollectionHashes($collection);
+      $clientHashes = $clientCollections[$collection] ?? [];
+
+      $new = [];
+      $changed = [];
+      $deleted = [];
+      $unchangedCount = 0;
+
+      foreach ($serverHashes as $name => $hash) {
+        if (!isset($clientHashes[$name])) {
+          $new[$name] = $hash;
+        }
+        elseif ($clientHashes[$name] !== $hash) {
+          $changed[$name] = $hash;
+        }
+        else {
+          $unchangedCount++;
+        }
+      }
+
+      foreach ($clientHashes as $name => $hash) {
+        if (!isset($serverHashes[$name])) {
+          $deleted[] = $name;
+        }
+      }
+
+      $totalItems = count($new) + count($changed) + count($deleted);
+      if ($totalItems > 0) {
+        $result[$collection] = [
+          'new' => $new,
+          'changed' => $changed,
+          'deleted' => $deleted,
+          'unchanged_count' => $unchangedCount,
+        ];
+      }
+    }
+
+    foreach (array_keys($clientCollections) as $collection) {
+      if (!in_array($collection, $serverCollections, TRUE) && !isset($result[$collection])) {
+        $clientHashes = $clientCollections[$collection];
+        if (!empty($clientHashes)) {
+          $result[$collection] = [
+            'new' => [],
+            'changed' => [],
+            'deleted' => array_keys($clientHashes),
+            'unchanged_count' => 0,
+          ];
+        }
+      }
+    }
+
+    return $result;
   }
 
   /**
