@@ -14,6 +14,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+/**
+ *
+ */
 #[CoversClass(ConfigChangeSubscriber::class)]
 #[Group('config_pull')]
 final class ConfigChangeSubscriberTest extends TestCase {
@@ -22,6 +25,9 @@ final class ConfigChangeSubscriberTest extends TestCase {
   private StateInterface $state;
   private ConfigChangeSubscriber $subscriber;
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->cacheTagsInvalidator = $this->createMock(CacheTagsInvalidatorInterface::class);
@@ -32,6 +38,9 @@ final class ConfigChangeSubscriberTest extends TestCase {
     );
   }
 
+  /**
+   *
+   */
   public function testSubscribedEvents(): void {
     $events = ConfigChangeSubscriber::getSubscribedEvents();
     $this->assertArrayHasKey(ConfigEvents::SAVE, $events);
@@ -39,6 +48,9 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->assertArrayHasKey(ConfigEvents::RENAME, $events);
   }
 
+  /**
+   *
+   */
   public function testSaveInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')
       ->with('config_pull.hash_version')
@@ -56,6 +68,9 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigChange($event);
   }
 
+  /**
+   *
+   */
   public function testDeleteInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')->willReturn(0);
 
@@ -71,6 +86,9 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigChange($event);
   }
 
+  /**
+   *
+   */
   public function testRenameInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')->willReturn(10);
 
@@ -86,6 +104,9 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigRename($event);
   }
 
+  /**
+   *
+   */
   public function testVersionDefaultsToZeroWhenNotSet(): void {
     $this->state->method('get')->willReturn(NULL);
 

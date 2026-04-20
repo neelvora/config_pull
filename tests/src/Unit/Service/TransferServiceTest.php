@@ -13,6 +13,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+/**
+ *
+ */
 #[CoversClass(TransferService::class)]
 #[Group('config_pull')]
 final class TransferServiceTest extends TestCase {
@@ -23,6 +26,9 @@ final class TransferServiceTest extends TestCase {
 
   private string $tempDir;
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->remoteClient = $this->createMock(RemoteClient::class);
@@ -33,6 +39,9 @@ final class TransferServiceTest extends TestCase {
     mkdir($this->tempDir, 0755, TRUE);
   }
 
+  /**
+   *
+   */
   protected function tearDown(): void {
     $files = glob($this->tempDir . '/*');
     if ($files) {
@@ -46,10 +55,16 @@ final class TransferServiceTest extends TestCase {
     parent::tearDown();
   }
 
+  /**
+   *
+   */
   private function writeYml(string $name, string $content): void {
     file_put_contents($this->tempDir . '/' . $name . '.yml', $content);
   }
 
+  /**
+   *
+   */
   public function testPullRoundTripWritesNewAndChangedFiles(): void {
     $this->writeYml('existing.config', "key: old_value\n");
 
@@ -80,6 +95,9 @@ final class TransferServiceTest extends TestCase {
     $this->assertSame("key: updated_value\n", file_get_contents($this->tempDir . '/existing.config.yml'));
   }
 
+  /**
+   *
+   */
   public function testPullDeletesRemovedConfigs(): void {
     $this->writeYml('to.delete', "key: value\n");
 
@@ -98,6 +116,9 @@ final class TransferServiceTest extends TestCase {
     $this->assertFileDoesNotExist($this->tempDir . '/to.delete.yml');
   }
 
+  /**
+   *
+   */
   public function testPullReturnsZerosOn304(): void {
     $this->remoteClient->method('diff')->willReturn(NULL);
 
@@ -109,6 +130,9 @@ final class TransferServiceTest extends TestCase {
     $this->assertSame([], $result['written']);
   }
 
+  /**
+   *
+   */
   public function testPullDryRunDoesNotWriteFiles(): void {
     $this->remoteClient->method('diff')
       ->willReturn([
@@ -130,6 +154,9 @@ final class TransferServiceTest extends TestCase {
     $this->assertFileExists($this->tempDir . '/old.config.yml');
   }
 
+  /**
+   *
+   */
   public function testPullWithFilterPassesPatternThrough(): void {
     $this->writeYml('system.site', "name: Test\n");
     $this->writeYml('node.settings', "use_admin_theme: true\n");
@@ -147,6 +174,9 @@ final class TransferServiceTest extends TestCase {
     $this->assertArrayNotHasKey('node.settings', $capturedHashes);
   }
 
+  /**
+   *
+   */
   public function testPullWithExcludeFilterRemovesMatchingItems(): void {
     $this->writeYml('system.site', "name: Test\n");
     $this->writeYml('node.settings', "use_admin_theme: true\n");
@@ -164,6 +194,9 @@ final class TransferServiceTest extends TestCase {
     $this->assertArrayNotHasKey('node.settings', $capturedHashes);
   }
 
+  /**
+   *
+   */
   public function testPullFiltersDiffResultToo(): void {
     $this->writeYml('system.site', "name: Test\n");
 
@@ -185,6 +218,9 @@ final class TransferServiceTest extends TestCase {
     $this->assertNotContains('node.type.page', $result['written']);
   }
 
+  /**
+   *
+   */
   public function testPartialDownloadFailureThrowsWithContext(): void {
     $this->remoteClient->method('diff')
       ->willReturn([
@@ -215,6 +251,9 @@ final class TransferServiceTest extends TestCase {
     }
   }
 
+  /**
+   *
+   */
   public function testDeleteNonexistentFileDoesNotThrow(): void {
     $this->remoteClient->method('diff')
       ->willReturn([

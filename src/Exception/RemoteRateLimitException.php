@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Drupal\config_pull\Exception;
 
+/**
+ *
+ */
 class RemoteRateLimitException extends \RuntimeException {
 
   public function __construct(

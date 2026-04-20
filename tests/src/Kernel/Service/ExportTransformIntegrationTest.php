@@ -12,12 +12,18 @@ use Drupal\KernelTests\KernelTestBase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 
+/**
+ *
+ */
 #[CoversClass(ConfigExportService::class)]
 #[Group('config_pull')]
 final class ExportTransformIntegrationTest extends KernelTestBase {
 
   protected static $modules = ['system', 'config_pull'];
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['system']);
@@ -31,6 +37,9 @@ final class ExportTransformIntegrationTest extends KernelTestBase {
     new Settings($settings);
   }
 
+  /**
+   *
+   */
   public function testExportServiceRespectsStorageTransformSubscribers(): void {
     $exportService = $this->container->get('config_pull.config_export');
 
@@ -58,6 +67,9 @@ final class ExportTransformIntegrationTest extends KernelTestBase {
     $this->assertArrayNotHasKey('system.site', $hashes);
   }
 
+  /**
+   *
+   */
   public function testExportServiceRespectsTransformedValues(): void {
     $this->container->get('event_dispatcher')->addListener(
       ConfigEvents::STORAGE_TRANSFORM_EXPORT,
@@ -80,6 +92,9 @@ final class ExportTransformIntegrationTest extends KernelTestBase {
     $this->assertSame('Transformed by config_split', $item['data']['name']);
   }
 
+  /**
+   *
+   */
   public function testExportServiceRespectsNewItemsFromTransform(): void {
     $this->container->get('event_dispatcher')->addListener(
       ConfigEvents::STORAGE_TRANSFORM_EXPORT,
@@ -104,6 +119,9 @@ final class ExportTransformIntegrationTest extends KernelTestBase {
     $this->assertSame('Injected by split', $item['data']['label']);
   }
 
+  /**
+   *
+   */
   private function resetExportStorage(): void {
     $property = new \ReflectionProperty($this->container->get('config.storage.export'), 'storage');
     $property->setValue($this->container->get('config.storage.export'), NULL);

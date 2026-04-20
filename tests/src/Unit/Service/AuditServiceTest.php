@@ -12,6 +12,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ *
+ */
 #[CoversClass(AuditService::class)]
 #[Group('config_pull')]
 final class AuditServiceTest extends TestCase {
@@ -19,6 +22,9 @@ final class AuditServiceTest extends TestCase {
   private LoggerInterface $logger;
   private AuditService $service;
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->logger = $this->createMock(LoggerInterface::class);
@@ -27,6 +33,9 @@ final class AuditServiceTest extends TestCase {
     $this->service = new AuditService($factory);
   }
 
+  /**
+   *
+   */
   public function testSuccessLogsInfo(): void {
     $this->logger->expects($this->once())
       ->method('info')
@@ -45,6 +54,9 @@ final class AuditServiceTest extends TestCase {
     $this->service->log($request, 'handshake', 'success', 200);
   }
 
+  /**
+   *
+   */
   public function testFailureLogsWarning(): void {
     $this->logger->expects($this->once())
       ->method('warning')
@@ -60,6 +72,9 @@ final class AuditServiceTest extends TestCase {
     $this->service->log($request, 'handshake', 'auth_failed', 401);
   }
 
+  /**
+   *
+   */
   public function testContextIncludesAllFields(): void {
     $nonce = bin2hex(random_bytes(32));
     $this->logger->expects($this->once())
@@ -86,6 +101,9 @@ final class AuditServiceTest extends TestCase {
     $this->service->log($request, 'export', 'success', 200, 42, 0.15);
   }
 
+  /**
+   *
+   */
   public function testMissingHeadersDefaultGracefully(): void {
     $this->logger->expects($this->once())
       ->method('warning')

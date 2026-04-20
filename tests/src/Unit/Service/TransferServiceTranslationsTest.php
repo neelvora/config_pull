@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\config_pull\Unit\Service;
 
+use org\bovigo\vfs\vfsStreamDirectory;
 use Drupal\config_pull\Service\ConfigDiffService;
-use Drupal\config_pull\Service\ConfigHashService;
 use Drupal\config_pull\Service\RemoteClient;
 use Drupal\config_pull\Service\TransferService;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -13,6 +13,9 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use org\bovigo\vfs\vfsStream;
 
+/**
+ *
+ */
 #[CoversClass(TransferService::class)]
 #[Group('config_pull')]
 final class TransferServiceTranslationsTest extends TestCase {
@@ -23,8 +26,11 @@ final class TransferServiceTranslationsTest extends TestCase {
 
   private TransferService $service;
 
-  private \org\bovigo\vfs\vfsStreamDirectory $root;
+  private vfsStreamDirectory $root;
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->client = $this->createMock(RemoteClient::class);
@@ -33,6 +39,9 @@ final class TransferServiceTranslationsTest extends TestCase {
     $this->root = vfsStream::setup('config_sync');
   }
 
+  /**
+   *
+   */
   public function testPullWithTranslationsPassesFlagToClient(): void {
     $syncDir = vfsStream::url('config_sync');
 
@@ -54,6 +63,9 @@ final class TransferServiceTranslationsTest extends TestCase {
     $this->assertSame(0, $result['new']);
   }
 
+  /**
+   *
+   */
   public function testPullDownloadsCollectionItems(): void {
     $syncDir = vfsStream::url('config_sync');
 
@@ -91,6 +103,9 @@ final class TransferServiceTranslationsTest extends TestCase {
     $this->assertSame("name: Sitio\n", file_get_contents($syncDir . '/language/es/system.site.yml'));
   }
 
+  /**
+   *
+   */
   public function testDryRunWithTranslationsIncludesCollectionCount(): void {
     $syncDir = vfsStream::url('config_sync');
 

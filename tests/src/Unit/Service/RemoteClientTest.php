@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\config_pull\Unit\Service;
 
+use GuzzleHttp\ClientInterface;
+use Consolidation\SiteAlias\SiteAliasManagerInterface;
+use Consolidation\SiteAlias\SiteAliasInterface;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Exception\ConnectException;
 use Drupal\config_pull\Exception\RemoteAuthenticationException;
 use Drupal\config_pull\Exception\RemoteNetworkException;
 use Drupal\config_pull\Exception\RemoteRateLimitException;
@@ -19,6 +24,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+/**
+ *
+ */
 #[CoversClass(RemoteClient::class)]
 #[Group('config_pull')]
 final class RemoteClientTest extends TestCase {
@@ -31,6 +39,9 @@ final class RemoteClientTest extends TestCase {
 
   private const SECRET = 'test-secret-64chars-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     new Settings([
@@ -51,6 +62,9 @@ final class RemoteClientTest extends TestCase {
     $this->client = new RemoteClient($httpClient);
   }
 
+  /**
+   *
+   */
   public function testGetRemoteConfigReturnsNormalizedConfig(): void {
     $config = $this->client->getRemoteConfig('staging');
     $this->assertSame('https://staging.example.com', $config['uri']);
@@ -59,6 +73,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertFalse($config['verify_ssl']);
   }
 
+  /**
+   *
+   */
   public function testGetRemoteConfigDefaultsTimeoutAndVerify(): void {
     new Settings([
       'config_pull_remotes' => [
@@ -70,12 +87,18 @@ final class RemoteClientTest extends TestCase {
     $this->assertTrue($config['verify_ssl']);
   }
 
+  /**
+   *
+   */
   public function testGetRemoteConfigThrowsForMissingRemote(): void {
     $this->expectException(\InvalidArgumentException::class);
     $this->expectExceptionMessage("Remote 'nonexistent' is not defined");
     $this->client->getRemoteConfig('nonexistent');
   }
 
+  /**
+   *
+   */
   public function testGetRemoteConfigThrowsForMissingUri(): void {
     new Settings([
       'config_pull_remotes' => [
@@ -87,6 +110,9 @@ final class RemoteClientTest extends TestCase {
     $this->client->getRemoteConfig('bad');
   }
 
+  /**
+   *
+   */
   public function testHandshakeReturnsDecodedResponse(): void {
     $payload = [
       'server_version' => '1.0.0',
@@ -101,6 +127,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertSame($payload, $result);
   }
 
+  /**
+   *
+   */
   public function testHandshakeSendsCorrectHmacHeaders(): void {
     $this->mockHandler->append(new Response(200, [], '{}'));
     $this->client->handshake('staging');
@@ -113,6 +142,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertTrue($request->hasHeader('X-Config-Pull-Signature'));
   }
 
+  /**
+   *
+   */
   public function testHandshakeSignatureIsValid(): void {
     $this->mockHandler->append(new Response(200, [], '{}'));
     $this->client->handshake('staging');
@@ -127,6 +159,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertSame($expected, $sig);
   }
 
+  /**
+   *
+   */
   public function testDiffSendsHashesAndReturnsResult(): void {
     $diffResponse = [
       'new' => ['a.b' => 'hash1'],
@@ -144,12 +179,18 @@ final class RemoteClientTest extends TestCase {
     $this->assertSame(['c.d' => 'oldhash', 'e.f' => 'hash3'], $body['hashes']);
   }
 
+  /**
+   *
+   */
   public function testDiffReturnsNullOn304(): void {
     $this->mockHandler->append(new Response(304));
     $result = $this->client->diff('staging', ['a.b' => 'hash']);
     $this->assertNull($result);
   }
 
+  /**
+   *
+   */
   public function testItemReturnsYamlAndHash(): void {
     $yaml = "name: Test\nslogan: ''\n";
     $this->mockHandler->append(new Response(200, ['X-Config-Hash' => 'abc123'], $yaml));
@@ -159,6 +200,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertSame('abc123', $result['hash']);
   }
 
+  /**
+   *
+   */
   public function testItemRequestUsesGetMethod(): void {
     $this->mockHandler->append(new Response(200, ['X-Config-Hash' => 'x'], 'data'));
     $this->client->item('staging', 'system.site');
@@ -168,6 +212,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertStringEndsWith('/config-pull/item/system.site', (string) $request->getUri());
   }
 
+  /**
+   *
+   */
   public function testExportReturnsTarGzBytes(): void {
     $tarContent = 'fake-tar-gz-bytes';
     $this->mockHandler->append(new Response(200, ['Content-Type' => 'application/gzip'], $tarContent));
@@ -181,6 +228,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertSame(['system.site', 'system.date'], $body['names']);
   }
 
+  /**
+   *
+   */
   public function testExportFullReturnsTarGzBytes(): void {
     $tarContent = 'full-tar-gz';
     $this->mockHandler->append(new Response(200, [], $tarContent));
@@ -193,6 +243,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertStringEndsWith('/config-pull/export/full', (string) $request->getUri());
   }
 
+  /**
+   *
+   */
   public function testAuthenticationFailureThrowsAuthException(): void {
     $this->mockHandler->append(new Response(401, [], '{"error":"authentication_failed"}'));
 
@@ -201,6 +254,9 @@ final class RemoteClientTest extends TestCase {
     $this->client->handshake('staging');
   }
 
+  /**
+   *
+   */
   public function testRateLimitThrowsRateLimitException(): void {
     $this->mockHandler->append(new Response(429, [], '{"error":"rate_limited","retry_after":30}'));
 
@@ -214,6 +270,9 @@ final class RemoteClientTest extends TestCase {
     }
   }
 
+  /**
+   *
+   */
   public function testServerErrorThrowsServerException(): void {
     $this->mockHandler->append(new Response(503, [], 'Service Unavailable'));
 
@@ -222,11 +281,14 @@ final class RemoteClientTest extends TestCase {
     $this->client->handshake('staging');
   }
 
+  /**
+   *
+   */
   public function testConnectionTimeoutThrowsNetworkException(): void {
     $this->mockHandler->append(
-      new \GuzzleHttp\Exception\ConnectException(
+      new ConnectException(
         'Connection timed out',
-        new \GuzzleHttp\Psr7\Request('POST', 'https://staging.example.com/config-pull/handshake'),
+        new Request('POST', 'https://staging.example.com/config-pull/handshake'),
       ),
     );
 
@@ -235,6 +297,9 @@ final class RemoteClientTest extends TestCase {
     $this->client->handshake('staging');
   }
 
+  /**
+   *
+   */
   public function testForbiddenThrowsAuthException(): void {
     $this->mockHandler->append(new Response(403, [], '{"error":"access_denied"}'));
 
@@ -243,6 +308,9 @@ final class RemoteClientTest extends TestCase {
     $this->client->handshake('staging');
   }
 
+  /**
+   *
+   */
   public function testRequestSetsTimeoutAndVerify(): void {
     $this->mockHandler->append(new Response(200, [], '{}'));
     $this->client->handshake('staging');
@@ -252,6 +320,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertFalse($options['verify']);
   }
 
+  /**
+   *
+   */
   public function testGetRemoteConfigStripsAtPrefix(): void {
     new Settings([
       'config_pull_remotes' => [
@@ -262,6 +333,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertSame('https://prod.example.com', $config['uri']);
   }
 
+  /**
+   *
+   */
   public function testGetRemoteConfigResolvesAlias(): void {
     new Settings([
       'config_pull_remotes' => [
@@ -269,18 +343,21 @@ final class RemoteClientTest extends TestCase {
       ],
     ]);
 
-    $alias = $this->createMock(\Consolidation\SiteAlias\SiteAliasInterface::class);
+    $alias = $this->createMock(SiteAliasInterface::class);
     $alias->method('get')->with('uri', '')->willReturn('https://alias.example.com');
 
-    $aliasManager = $this->createMock(\Consolidation\SiteAlias\SiteAliasManagerInterface::class);
+    $aliasManager = $this->createMock(SiteAliasManagerInterface::class);
     $aliasManager->method('get')->with('@prod.live')->willReturn($alias);
 
-    $client = new \Drupal\config_pull\Service\RemoteClient($this->createMock(\GuzzleHttp\ClientInterface::class));
+    $client = new RemoteClient($this->createMock(ClientInterface::class));
     $client->setAliasManager($aliasManager);
     $config = $client->getRemoteConfig('prod');
     $this->assertSame('https://alias.example.com', $config['uri']);
   }
 
+  /**
+   *
+   */
   public function testGetRemoteConfigSettingsUriWinsOverAlias(): void {
     new Settings([
       'config_pull_remotes' => [
@@ -291,6 +368,9 @@ final class RemoteClientTest extends TestCase {
     $this->assertSame('https://direct.example.com', $config['uri']);
   }
 
+  /**
+   *
+   */
   public function testGetRemoteConfigAliasWithoutManagerThrows(): void {
     new Settings([
       'config_pull_remotes' => [

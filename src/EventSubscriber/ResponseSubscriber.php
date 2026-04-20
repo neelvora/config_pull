@@ -22,6 +22,9 @@ final class ResponseSubscriber implements EventSubscriberInterface {
     ];
   }
 
+  /**
+   *
+   */
   public function onKernelResponse(ResponseEvent $event): void {
     $route = $event->getRequest()->attributes->get('_route', '');
     if (!str_starts_with($route, 'config_pull.')) {
@@ -36,7 +39,7 @@ final class ResponseSubscriber implements EventSubscriberInterface {
     $response->headers->set('Pragma', 'no-cache');
 
     $requestId = $event->getRequest()->headers->get('X-Request-ID');
-    if ($requestId !== null) {
+    if ($requestId !== NULL) {
       $response->headers->set('X-Request-ID', $requestId);
     }
   }

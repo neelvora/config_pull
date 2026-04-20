@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\config_pull\Unit\Drush\Commands;
 
+use Drupal\config_pull\Drush\WizardPrompter;
 use Drupal\config_pull\Drush\Commands\ConfigPullCommands;
 use Drupal\config_pull\Service\ConfigDiffService;
 use Drupal\config_pull\Service\RemoteClient;
@@ -16,6 +17,9 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
+/**
+ *
+ */
 #[CoversClass(ConfigPullCommands::class)]
 #[Group('config_pull')]
 final class ConfigPullCommandsTest extends TestCase {
@@ -30,6 +34,9 @@ final class ConfigPullCommandsTest extends TestCase {
 
   private BufferedOutput $output;
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     new Settings(['config_sync_directory' => '/tmp/config_sync_test']);
@@ -47,6 +54,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->commands->restoreState($input, $this->output);
   }
 
+  /**
+   *
+   */
   public function testPullShowsUpToDateWhenNoChanges(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -62,6 +72,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('up to date', $out);
   }
 
+  /**
+   *
+   */
   public function testPullDryRunReportsChangesWithoutWriting(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -80,6 +93,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('1 deleted', $out);
   }
 
+  /**
+   *
+   */
   public function testPullReportsWrittenAndDeleted(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -99,6 +115,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('1 new, 1 changed, 1 deleted', $out);
   }
 
+  /**
+   *
+   */
   public function testStatusShowsInSyncWhen304(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -113,6 +132,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('In sync', $out);
   }
 
+  /**
+   *
+   */
   public function testStatusListsChanges(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -144,6 +166,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('47 unchanged', $out);
   }
 
+  /**
+   *
+   */
   public function testStatusJsonOutputUsesPlainNameArrays(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -176,6 +201,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertSame(47, $decoded['unchanged_count']);
   }
 
+  /**
+   *
+   */
   public function testPullPassesOnlyFilterToTransferService(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -193,6 +221,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->commands->pull('local', ['dry-run' => FALSE, 'only' => 'system.*', 'exclude' => '', 'format' => 'table', 'with-translations' => FALSE]);
   }
 
+  /**
+   *
+   */
   public function testDiffShowsNoDifferencesWhenInSync(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -207,6 +238,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('No differences', $out);
   }
 
+  /**
+   *
+   */
   public function testDiffListsChanges(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -237,6 +271,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('3 difference(s)', $out);
   }
 
+  /**
+   *
+   */
   public function testDiffJsonOutputIncludesStructuredData(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -269,6 +306,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertArrayHasKey('diffs', $decoded);
   }
 
+  /**
+   *
+   */
   public function testSetSiteAliasManagerForwardsToClient(): void {
     $aliasManager = $this->createMock(SiteAliasManagerInterface::class);
     $client = $this->createMock(RemoteClient::class);
@@ -285,6 +325,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertTrue($commands->hasSiteAliasManager());
   }
 
+  /**
+   *
+   */
   public function testPullWarnsWhenServerLacksTranslationSupport(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -301,6 +344,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('does not support translations', $out);
   }
 
+  /**
+   *
+   */
   public function testHandshakeCapabilityFlags(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -318,6 +364,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringNotContainsString('does not support translations', $out);
   }
 
+  /**
+   *
+   */
   public function testDiffShowValuesBatchFetchesViaExport(): void {
     $this->client->method('handshake')->willReturn([
       'server_version' => '1.0.0',
@@ -350,6 +399,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->commands->diff('local', ['only' => '', 'exclude' => '', 'show-values' => TRUE, 'format' => 'table']);
   }
 
+  /**
+   *
+   */
   public function testSetupSnippetsContainRemoteConfig(): void {
     $this->commands->printSetupSnippets('prod', 'https://example.com', 'test-secret-value');
     $out = $this->output->fetch();
@@ -361,6 +413,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString("'prod'", $out);
   }
 
+  /**
+   *
+   */
   public function testSetupSnippetsContainCustomRemoteName(): void {
     $this->commands->printSetupSnippets('staging', 'https://staging.example.com', 'staging-secret');
     $out = $this->output->fetch();
@@ -370,18 +425,27 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString("'secret' => 'staging-secret'", $out);
   }
 
+  /**
+   *
+   */
   public function testStripControlBytesRemovesAnsi(): void {
     $reflection = new \ReflectionMethod($this->commands, 'stripControlBytes');
     $result = $reflection->invoke($this->commands, "hello\x1B[31mred\x1B[0m world\x00\x07");
     $this->assertSame('hellored world', $result);
   }
 
+  /**
+   *
+   */
   public function testStripControlBytesPreservesNormalText(): void {
     $reflection = new \ReflectionMethod($this->commands, 'stripControlBytes');
     $result = $reflection->invoke($this->commands, "normal text with\nnewlines\tand tabs");
     $this->assertSame("normal text with\nnewlines\tand tabs", $result);
   }
 
+  /**
+   *
+   */
   public function testWizardGeneratesSnippetsWithProvidedSecret(): void {
     $this->commands->setPrompter(new TestWizardPrompter([
       'asks' => ['staging', 'https://staging.example.com', 'manual-secret-value'],
@@ -396,6 +460,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString("'secret' => 'manual-secret-value'", $out);
   }
 
+  /**
+   *
+   */
   public function testWizardGeneratesRandomSecretWhenRequested(): void {
     $this->commands->setPrompter(new TestWizardPrompter([
       'asks' => ['prod', 'https://example.com'],
@@ -410,6 +477,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString("'uri' => 'https://example.com'", $out);
   }
 
+  /**
+   *
+   */
   public function testWizardAbortsWhenUriEmpty(): void {
     $this->commands->setPrompter(new TestWizardPrompter([
       'asks' => ['prod', ''],
@@ -423,6 +493,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringNotContainsString('Generated secret', $out);
   }
 
+  /**
+   *
+   */
   public function testWizardAbortsWhenManualSecretEmpty(): void {
     $this->commands->setPrompter(new TestWizardPrompter([
       'asks' => ['prod', 'https://example.com', ''],
@@ -435,6 +508,9 @@ final class ConfigPullCommandsTest extends TestCase {
     $this->assertStringContainsString('Secret is required', $out);
   }
 
+  /**
+   *
+   */
   public function testWizardRunsHandshakeWhenConfirmed(): void {
     $this->client->expects($this->once())
       ->method('handshake')
@@ -454,7 +530,10 @@ final class ConfigPullCommandsTest extends TestCase {
 
 }
 
-final class TestWizardPrompter implements \Drupal\config_pull\Drush\WizardPrompter {
+/**
+ *
+ */
+final class TestWizardPrompter implements WizardPrompter {
 
   private array $asks;
   private array $confirms;
@@ -464,6 +543,9 @@ final class TestWizardPrompter implements \Drupal\config_pull\Drush\WizardPrompt
     $this->confirms = $answers['confirms'] ?? [];
   }
 
+  /**
+   *
+   */
   public function ask(string $question, ?string $default = NULL): ?string {
     if (empty($this->asks)) {
       return $default;
@@ -471,6 +553,9 @@ final class TestWizardPrompter implements \Drupal\config_pull\Drush\WizardPrompt
     return array_shift($this->asks);
   }
 
+  /**
+   *
+   */
   public function confirm(string $question, bool $default = TRUE): bool {
     if (empty($this->confirms)) {
       return $default;

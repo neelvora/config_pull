@@ -11,6 +11,9 @@ use PHPUnit\Framework\Attributes\Group;
 use Drupal\config_pull\Controller\ConfigPullController;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ *
+ */
 #[CoversClass(ConfigPullController::class)]
 #[Group('config_pull')]
 final class ConfigPullControllerKernelTest extends KernelTestBase {
@@ -19,6 +22,9 @@ final class ConfigPullControllerKernelTest extends KernelTestBase {
 
   private string $secret = 'test-kernel-secret-64chars-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->installSchema('system', []);
@@ -33,6 +39,9 @@ final class ConfigPullControllerKernelTest extends KernelTestBase {
     new Settings($settings);
   }
 
+  /**
+   *
+   */
   private function createSignedRequest(string $method, string $path, string $body = ''): Request {
     $timestamp = (string) time();
     $nonce = bin2hex(random_bytes(32));
@@ -53,6 +62,9 @@ final class ConfigPullControllerKernelTest extends KernelTestBase {
     return Request::create($path, $method, [], [], [], $server, $body);
   }
 
+  /**
+   *
+   */
   public function testHandshakeReturnsValidResponse(): void {
     $request = $this->createSignedRequest('POST', '/config-pull/handshake');
     $kernel = $this->container->get('http_kernel');
@@ -65,6 +77,9 @@ final class ConfigPullControllerKernelTest extends KernelTestBase {
     $this->assertArrayHasKey('hash_version', $data);
   }
 
+  /**
+   *
+   */
   public function testHandshakeRejectsUnauthenticatedRequest(): void {
     $request = Request::create('/config-pull/handshake', 'POST', [], [], [], [
       'REMOTE_ADDR' => '127.0.0.1',
@@ -75,6 +90,9 @@ final class ConfigPullControllerKernelTest extends KernelTestBase {
     $this->assertSame(401, $response->getStatusCode());
   }
 
+  /**
+   *
+   */
   public function testDiffReturnsNullForMatchingHashes(): void {
     $hashes = [];
     $body = json_encode(['hashes' => $hashes]);
@@ -87,6 +105,9 @@ final class ConfigPullControllerKernelTest extends KernelTestBase {
     $this->assertArrayHasKey('new', $data);
   }
 
+  /**
+   *
+   */
   public function testItemReturnsConfigYaml(): void {
     $exportService = $this->container->get('config_pull.config_export');
     $count = $exportService->getConfigCount();
@@ -108,6 +129,9 @@ final class ConfigPullControllerKernelTest extends KernelTestBase {
     $this->assertNotEmpty($response->headers->get('X-Config-Hash'));
   }
 
+  /**
+   *
+   */
   public function testItemReturns404ForMissingConfig(): void {
     $request = $this->createSignedRequest('GET', '/config-pull/item/nonexistent.config.name');
     $kernel = $this->container->get('http_kernel');
@@ -116,6 +140,9 @@ final class ConfigPullControllerKernelTest extends KernelTestBase {
     $this->assertSame(404, $response->getStatusCode());
   }
 
+  /**
+   *
+   */
   public function testExportFullReturnsTarGz(): void {
     $request = $this->createSignedRequest('GET', '/config-pull/export/full');
     $kernel = $this->container->get('http_kernel');

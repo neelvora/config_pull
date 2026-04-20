@@ -11,6 +11,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ *
+ */
 #[CoversClass(ConfigPullController::class)]
 #[Group('config_pull')]
 final class SecurityControlsKernelTest extends KernelTestBase {
@@ -19,6 +22,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
 
   private string $secret = 'test-kernel-secret-64chars-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->installSchema('system', []);
@@ -33,6 +39,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     new Settings($settings);
   }
 
+  /**
+   *
+   */
   private function createSignedRequest(string $method, string $path, string $body = ''): Request {
     $timestamp = (string) time();
     $nonce = bin2hex(random_bytes(32));
@@ -53,6 +62,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     return Request::create($path, $method, [], [], [], $server, $body);
   }
 
+  /**
+   *
+   */
   public function testInvalidConfigNameRejectedByRouter(): void {
     $request = $this->createSignedRequest('GET', '/config-pull/item/../../etc/passwd');
     $kernel = $this->container->get('http_kernel');
@@ -61,6 +73,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertContains($response->getStatusCode(), [403, 404]);
   }
 
+  /**
+   *
+   */
   public function testValidConfigNameAccepted(): void {
     $request = $this->createSignedRequest('GET', '/config-pull/item/system.site');
     $kernel = $this->container->get('http_kernel');
@@ -69,6 +84,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertContains($response->getStatusCode(), [200, 404]);
   }
 
+  /**
+   *
+   */
   public function testOversizedHashMapRejected(): void {
     $hashes = [];
     for ($i = 0; $i < 10001; $i++) {
@@ -84,6 +102,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertSame('invalid_request', $data['error']);
   }
 
+  /**
+   *
+   */
   public function testServerDisabledReturns503(): void {
     $settings = Settings::getAll();
     $settings['config_pull']['server_enabled'] = FALSE;
@@ -96,6 +117,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertSame(503, $response->getStatusCode());
   }
 
+  /**
+   *
+   */
   public function testEmergencyKillSwitchReturns503(): void {
     $this->container->get('state')->set('config_pull.emergency_kill', TRUE);
 
@@ -108,6 +132,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertSame('service_unavailable', $data['error']);
   }
 
+  /**
+   *
+   */
   public function testEmergencyKillSwitchCanBeCleared(): void {
     $state = $this->container->get('state');
     $state->set('config_pull.emergency_kill', TRUE);
@@ -124,6 +151,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertSame(200, $response2->getStatusCode());
   }
 
+  /**
+   *
+   */
   public function testMalformedJsonBodyRejected(): void {
     $server = [
       'HTTP_X_CONFIG_PULL_TIMESTAMP' => (string) time(),
@@ -142,6 +172,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertSame(400, $response->getStatusCode());
   }
 
+  /**
+   *
+   */
   public function testContentTypeEnforcementOnDiff(): void {
     $body = json_encode(['hashes' => []]);
     $server = [
@@ -159,6 +192,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertSame(415, $response->getStatusCode());
   }
 
+  /**
+   *
+   */
   public function testContentTypeEnforcementOnExport(): void {
     $body = json_encode(['names' => ['system.site']]);
     $server = [
@@ -176,6 +212,9 @@ final class SecurityControlsKernelTest extends KernelTestBase {
     $this->assertSame(415, $response->getStatusCode());
   }
 
+  /**
+   *
+   */
   public function testResponseSecurityHeaders(): void {
     $request = $this->createSignedRequest('POST', '/config-pull/handshake');
     $request->headers->set('X-Request-ID', 'test-request-id-12345');

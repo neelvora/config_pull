@@ -50,6 +50,9 @@ final class ConfigChangeSubscriber implements EventSubscriberInterface {
     $this->invalidateAndBump();
   }
 
+  /**
+   *
+   */
   private function invalidateAndBump(): void {
     $this->cacheTagsInvalidator->invalidateTags([self::CACHE_TAG]);
     $current = (int) ($this->state->get(self::STATE_VERSION_KEY) ?? 0);

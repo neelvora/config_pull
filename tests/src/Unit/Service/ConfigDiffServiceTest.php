@@ -11,6 +11,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+/**
+ *
+ */
 #[CoversClass(ConfigDiffService::class)]
 #[Group('config_pull')]
 final class ConfigDiffServiceTest extends TestCase {
@@ -21,6 +24,9 @@ final class ConfigDiffServiceTest extends TestCase {
 
   private string $tempDir;
 
+  /**
+   *
+   */
   protected function setUp(): void {
     parent::setUp();
     $this->hashService = new ConfigHashService();
@@ -29,6 +35,9 @@ final class ConfigDiffServiceTest extends TestCase {
     mkdir($this->tempDir, 0755, TRUE);
   }
 
+  /**
+   *
+   */
   protected function tearDown(): void {
     $files = glob($this->tempDir . '/*');
     foreach ($files as $file) {
@@ -38,10 +47,16 @@ final class ConfigDiffServiceTest extends TestCase {
     parent::tearDown();
   }
 
+  /**
+   *
+   */
   private function writeYml(string $name, array $data): void {
     file_put_contents($this->tempDir . '/' . $name . '.yml', Yaml::encode($data));
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesReturnsHashesForAllFiles(): void {
     $this->writeYml('system.site', ['name' => 'Test']);
     $this->writeYml('system.date', ['timezone' => 'UTC']);
@@ -53,6 +68,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame(64, strlen($hashes['system.site']));
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesWithFilter(): void {
     $this->writeYml('system.site', ['name' => 'Test']);
     $this->writeYml('system.date', ['timezone' => 'UTC']);
@@ -65,6 +83,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertArrayNotHasKey('node.settings', $hashes);
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesReturnsConsistentHash(): void {
     $data = ['name' => 'Test', 'slogan' => ''];
     $this->writeYml('system.site', $data);
@@ -74,6 +95,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame($expected, $hashes['system.site']);
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesReturnsSortedKeys(): void {
     $this->writeYml('z.config', ['a' => 1]);
     $this->writeYml('a.config', ['b' => 2]);
@@ -84,11 +108,17 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame(['a.config', 'm.config', 'z.config'], $keys);
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesThrowsForMissingDir(): void {
     $this->expectException(\InvalidArgumentException::class);
     $this->service->computeLocalHashes('/nonexistent/path');
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesSkipsInvalidYaml(): void {
     $this->writeYml('good.config', ['key' => 'value']);
     file_put_contents($this->tempDir . '/bad.yml', 'just a string');
@@ -98,11 +128,17 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertArrayHasKey('good.config', $hashes);
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesEmptyDir(): void {
     $hashes = $this->service->computeLocalHashes($this->tempDir);
     $this->assertSame([], $hashes);
   }
 
+  /**
+   *
+   */
   public function testBuildDiffResultPassesThroughServerResponse(): void {
     $serverResponse = [
       'new' => ['a.b' => 'hash1'],
@@ -117,6 +153,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame(10, $result['unchanged_count']);
   }
 
+  /**
+   *
+   */
   public function testBuildDiffResultDefaultsMissingKeys(): void {
     $result = $this->service->buildDiffResult([], []);
     $this->assertSame([], $result['new']);
@@ -125,6 +164,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame(0, $result['unchanged_count']);
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesWithExcludeFilter(): void {
     $this->writeYml('system.site', ['name' => 'Test']);
     $this->writeYml('system.date', ['timezone' => 'UTC']);
@@ -136,6 +178,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertArrayNotHasKey('node.settings', $hashes);
   }
 
+  /**
+   *
+   */
   public function testComputeLocalHashesOnlyAndExcludeCombined(): void {
     $this->writeYml('system.site', ['name' => 'Test']);
     $this->writeYml('system.date', ['timezone' => 'UTC']);
@@ -149,6 +194,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertArrayNotHasKey('system.performance', $hashes);
   }
 
+  /**
+   *
+   */
   public function testFilterDiffResultWithOnlyPattern(): void {
     $diff = [
       'new' => ['system.site' => 'h1', 'node.type.page' => 'h2'],
@@ -163,6 +211,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame(50, $result['unchanged_count']);
   }
 
+  /**
+   *
+   */
   public function testFilterDiffResultWithExcludePattern(): void {
     $diff = [
       'new' => ['system.site' => 'h1', 'node.type.page' => 'h2'],
@@ -176,6 +227,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame([], $result['deleted']);
   }
 
+  /**
+   *
+   */
   public function testFilterDiffResultNoFiltersReturnsUnchanged(): void {
     $diff = [
       'new' => ['a' => 'h1'],
@@ -186,6 +240,9 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame($diff, $this->service->filterDiffResult($diff));
   }
 
+  /**
+   *
+   */
   public function testFilterDiffResultOnlyWithNoMatch(): void {
     $diff = [
       'new' => ['system.site' => 'h1'],

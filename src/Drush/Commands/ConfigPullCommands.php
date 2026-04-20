@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Drupal\config_pull\Drush\Commands;
 
+use Drupal\Core\Site\Settings;
+use Symfony\Component\Console\Style\StyleInterface;
 use Drupal\config_pull\Exception\RemoteAuthenticationException;
 use Drupal\config_pull\Exception\RemoteNetworkException;
 use Drupal\config_pull\Exception\RemoteRateLimitException;
@@ -22,6 +24,9 @@ use Psr\Container\ContainerInterface;
 use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
 
+/**
+ *
+ */
 final class ConfigPullCommands extends DrushCommands implements SiteAliasManagerAwareInterface {
 
   use SiteAliasManagerAwareTrait {
@@ -30,21 +35,37 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
 
   private ?WizardPrompter $prompter = NULL;
 
+  /**
+   *
+   */
   public function setPrompter(WizardPrompter $prompter): void {
     $this->prompter = $prompter;
   }
 
+  /**
+   *
+   */
   private function prompter(): WizardPrompter {
     if ($this->prompter === NULL) {
       $io = $this->io();
       $this->prompter = new class($io) implements WizardPrompter {
-        public function __construct(private readonly \Symfony\Component\Console\Style\StyleInterface $io) {}
+
+        public function __construct(private readonly StyleInterface $io) {}
+
+        /**
+         *
+         */
         public function ask(string $question, ?string $default = NULL): ?string {
           return $this->io->ask($question, $default);
         }
+
+        /**
+         *
+         */
         public function confirm(string $question, bool $default = TRUE): bool {
           return $this->io->confirm($question, $default);
         }
+
       };
     }
     return $this->prompter;
@@ -58,11 +79,17 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     parent::__construct();
   }
 
+  /**
+   *
+   */
   public function setSiteAliasManager(SiteAliasManagerInterface $siteAliasManager): void {
     $this->traitSetSiteAliasManager($siteAliasManager);
     $this->client->setAliasManager($siteAliasManager);
   }
 
+  /**
+   *
+   */
   public static function create(ContainerInterface $container): self {
     return new self(
       $container->get('config_pull.client'),
@@ -71,6 +98,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     );
   }
 
+  /**
+ *
+ */
   #[CLI\Command(name: 'config-pull:fetch', aliases: ['cpf'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'dry-run', description: 'Show changes without writing')]
@@ -136,6 +166,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->success("{$result['new']} new, {$result['changed']} changed, {$result['deleted']} deleted");
   }
 
+  /**
+ *
+ */
   #[CLI\Command(name: 'config-pull:status', aliases: ['cps'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'only', description: 'Glob pattern to include config names')]
@@ -208,6 +241,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->note("$total change(s), {$diff['unchanged_count']} unchanged");
   }
 
+  /**
+ *
+ */
   #[CLI\Command(name: 'config-pull:diff', aliases: ['cpd'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'only', description: 'Glob pattern to include config names')]
@@ -300,6 +336,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->note("$totalChanges difference(s)");
   }
 
+  /**
+   *
+   */
   private function computeValueDiffs(string $remote, string $syncDir, array $diff): array {
     $diffs = [];
     $differ = new Differ(new UnifiedDiffOutputBuilder('', FALSE));
@@ -329,6 +368,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     return $diffs;
   }
 
+  /**
+   *
+   */
   private function batchFetchRemoteYamls(string $remote, array $names): array {
     try {
       $tarGzContent = $this->client->export($remote, $names);
@@ -362,6 +404,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     return $yamls;
   }
 
+  /**
+   *
+   */
   private function printTruncatedDiff(string $diffText): void {
     $diffText = $this->stripControlBytes($diffText);
     $lines = explode("\n", $diffText);
@@ -382,12 +427,18 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->text("    [...$remaining more lines, pipe to a file for full output]");
   }
 
+  /**
+   *
+   */
   private function stripControlBytes(string $text): string {
     return preg_replace('/\x1B\[[0-9;]*[A-Za-z]|[\x00-\x08\x0B\x0C\x0E-\x1A\x1C-\x1F\x7F]/', '', $text);
   }
 
+  /**
+   *
+   */
   private function getSyncDir(): string {
-    $syncDir = \Drupal\Core\Site\Settings::get('config_sync_directory');
+    $syncDir = Settings::get('config_sync_directory');
     if (!$syncDir) {
       throw new \RuntimeException('config_sync_directory is not configured in settings.php');
     }
@@ -397,6 +448,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     return $syncDir;
   }
 
+  /**
+   *
+   */
   private function formatRemoteError(\Throwable $e): string {
     return match (TRUE) {
       $e instanceof RemoteAuthenticationException => "Authentication failed. Check the shared secret in settings.php.",
@@ -407,6 +461,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     };
   }
 
+  /**
+ *
+ */
   #[CLI\Command(name: 'config-pull:setup', aliases: ['cpsetup'])]
   public function setup(): void {
     $this->io()->title('Config Pull Setup');
@@ -449,6 +506,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     }
   }
 
+  /**
+   *
+   */
   public function printSetupSnippets(string $remoteName, string $uri, string $secret): void {
     $this->io()->section('Server settings.php snippet');
     $this->io()->text([

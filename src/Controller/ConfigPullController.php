@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\config_pull\Controller;
 
+use Drupal\Component\Serialization\Yaml;
 use Drupal\config_pull\Service\AuditService;
 use Drupal\config_pull\Service\AuthenticationService;
 use Drupal\config_pull\Service\ConfigExportService;
@@ -15,7 +16,6 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Serialization\Encoder\YamlEncoder;
 
 /**
  * Handles config_pull API endpoints.
@@ -47,6 +47,9 @@ final class ConfigPullController implements ContainerInjectionInterface {
     );
   }
 
+  /**
+   *
+   */
   public function handshake(Request $request): JsonResponse {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -76,6 +79,9 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return new JsonResponse($data);
   }
 
+  /**
+   *
+   */
   public function diff(Request $request): JsonResponse {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -151,6 +157,9 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return new JsonResponse($data);
   }
 
+  /**
+   *
+   */
   public function item(Request $request, string $name): Response {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -170,7 +179,7 @@ final class ConfigPullController implements ContainerInjectionInterface {
       return new JsonResponse(['error' => 'not_found', 'detail' => 'Config item not found'], 404);
     }
 
-    $yaml = \Drupal\Component\Serialization\Yaml::encode($item['data']);
+    $yaml = Yaml::encode($item['data']);
     $response = new Response($yaml, 200, [
       'Content-Type' => 'text/yaml',
       'X-Config-Hash' => $item['hash'],
@@ -180,6 +189,9 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return $response;
   }
 
+  /**
+   *
+   */
   public function export(Request $request): Response {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -222,6 +234,9 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return $response;
   }
 
+  /**
+   *
+   */
   public function exportFull(Request $request): Response {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -247,6 +262,9 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return $response;
   }
 
+  /**
+   *
+   */
   private function computeCollectionDiffs(array $clientCollections): array {
     $result = [];
     $serverCollections = $this->exportService->listCollections();
@@ -315,6 +333,9 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return new JsonResponse(['error' => $authResult['error']], $code);
   }
 
+  /**
+   *
+   */
   private function requireJsonContentType(Request $request): bool {
     $contentType = $request->headers->get('Content-Type', '');
     return str_starts_with($contentType, 'application/json');
