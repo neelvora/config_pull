@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Drupal\Tests\config_pull\Unit\Service;
 
+use Drupal\config_pull\Exception\TransferInterruptedException;
 use Drupal\config_pull\Service\ConfigDiffService;
 use Drupal\config_pull\Service\ConfigHashService;
 use Drupal\config_pull\Service\RemoteClient;
@@ -119,7 +120,7 @@ final class TransferServiceTest extends TestCase {
 
     $this->writeYml('old.config', "key: keep\n");
 
-    $result = $this->service->pull('staging', $this->tempDir, NULL, TRUE);
+    $result = $this->service->pull('staging', $this->tempDir, NULL, NULL, TRUE);
 
     $this->assertSame(1, $result['new']);
     $this->assertSame(0, $result['changed']);
@@ -140,10 +141,48 @@ final class TransferServiceTest extends TestCase {
         return NULL;
       });
 
-    $this->service->pull('staging', $this->tempDir, 'system.*');
+    $this->service->pull('staging', $this->tempDir, 'system.*', NULL);
 
     $this->assertArrayHasKey('system.site', $capturedHashes);
     $this->assertArrayNotHasKey('node.settings', $capturedHashes);
+  }
+
+  public function testPullWithExcludeFilterRemovesMatchingItems(): void {
+    $this->writeYml('system.site', "name: Test\n");
+    $this->writeYml('node.settings', "use_admin_theme: true\n");
+
+    $capturedHashes = NULL;
+    $this->remoteClient->method('diff')
+      ->willReturnCallback(function (string $remote, array $hashes) use (&$capturedHashes) {
+        $capturedHashes = $hashes;
+        return NULL;
+      });
+
+    $this->service->pull('staging', $this->tempDir, NULL, 'node.*');
+
+    $this->assertArrayHasKey('system.site', $capturedHashes);
+    $this->assertArrayNotHasKey('node.settings', $capturedHashes);
+  }
+
+  public function testPullFiltersDiffResultToo(): void {
+    $this->writeYml('system.site', "name: Test\n");
+
+    $this->remoteClient->method('diff')
+      ->willReturn([
+        'new' => ['system.date' => 'h1', 'node.type.page' => 'h2'],
+        'changed' => [],
+        'deleted' => [],
+        'unchanged_count' => 1,
+      ]);
+
+    $this->remoteClient->method('item')
+      ->willReturn(['yaml' => "key: value\n", 'hash' => 'abc']);
+
+    $result = $this->service->pull('staging', $this->tempDir, 'system.*', NULL, FALSE);
+
+    $this->assertSame(1, $result['new']);
+    $this->assertContains('system.date', $result['written']);
+    $this->assertNotContains('node.type.page', $result['written']);
   }
 
   public function testPartialDownloadFailureThrowsWithContext(): void {
@@ -165,9 +204,15 @@ final class TransferServiceTest extends TestCase {
         return ['yaml' => "key: value\n", 'hash' => 'abc'];
       });
 
-    $this->expectException(\RuntimeException::class);
-    $this->expectExceptionMessage('Transfer interrupted after writing 1 files');
-    $this->service->pull('staging', $this->tempDir);
+    try {
+      $this->service->pull('staging', $this->tempDir);
+      $this->fail('Expected TransferInterruptedException');
+    }
+    catch (TransferInterruptedException $e) {
+      $this->assertStringContainsString('Transfer interrupted after writing 1 of 2 files', $e->getMessage());
+      $this->assertSame(['first.config'], $e->written);
+      $this->assertSame([], $e->removed);
+    }
   }
 
   public function testDeleteNonexistentFileDoesNotThrow(): void {

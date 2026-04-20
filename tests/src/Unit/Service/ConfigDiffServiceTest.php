@@ -125,4 +125,78 @@ final class ConfigDiffServiceTest extends TestCase {
     $this->assertSame(0, $result['unchanged_count']);
   }
 
+  public function testComputeLocalHashesWithExcludeFilter(): void {
+    $this->writeYml('system.site', ['name' => 'Test']);
+    $this->writeYml('system.date', ['timezone' => 'UTC']);
+    $this->writeYml('node.settings', ['use_admin_theme' => TRUE]);
+
+    $hashes = $this->service->computeLocalHashes($this->tempDir, NULL, 'node.*');
+    $this->assertCount(2, $hashes);
+    $this->assertArrayHasKey('system.site', $hashes);
+    $this->assertArrayNotHasKey('node.settings', $hashes);
+  }
+
+  public function testComputeLocalHashesOnlyAndExcludeCombined(): void {
+    $this->writeYml('system.site', ['name' => 'Test']);
+    $this->writeYml('system.date', ['timezone' => 'UTC']);
+    $this->writeYml('system.performance', ['cache' => TRUE]);
+    $this->writeYml('node.settings', ['use_admin_theme' => TRUE]);
+
+    $hashes = $this->service->computeLocalHashes($this->tempDir, 'system.*', 'system.performance');
+    $this->assertCount(2, $hashes);
+    $this->assertArrayHasKey('system.site', $hashes);
+    $this->assertArrayHasKey('system.date', $hashes);
+    $this->assertArrayNotHasKey('system.performance', $hashes);
+  }
+
+  public function testFilterDiffResultWithOnlyPattern(): void {
+    $diff = [
+      'new' => ['system.site' => 'h1', 'node.type.page' => 'h2'],
+      'changed' => ['system.date' => 'h3', 'views.view.content' => 'h4'],
+      'deleted' => ['system.performance', 'field.field.node'],
+      'unchanged_count' => 50,
+    ];
+    $result = $this->service->filterDiffResult($diff, 'system.*');
+    $this->assertSame(['system.site' => 'h1'], $result['new']);
+    $this->assertSame(['system.date' => 'h3'], $result['changed']);
+    $this->assertSame(['system.performance'], $result['deleted']);
+    $this->assertSame(50, $result['unchanged_count']);
+  }
+
+  public function testFilterDiffResultWithExcludePattern(): void {
+    $diff = [
+      'new' => ['system.site' => 'h1', 'node.type.page' => 'h2'],
+      'changed' => ['system.date' => 'h3'],
+      'deleted' => ['views.view.content'],
+      'unchanged_count' => 50,
+    ];
+    $result = $this->service->filterDiffResult($diff, NULL, 'views.*');
+    $this->assertSame(['system.site' => 'h1', 'node.type.page' => 'h2'], $result['new']);
+    $this->assertSame(['system.date' => 'h3'], $result['changed']);
+    $this->assertSame([], $result['deleted']);
+  }
+
+  public function testFilterDiffResultNoFiltersReturnsUnchanged(): void {
+    $diff = [
+      'new' => ['a' => 'h1'],
+      'changed' => ['b' => 'h2'],
+      'deleted' => ['c'],
+      'unchanged_count' => 10,
+    ];
+    $this->assertSame($diff, $this->service->filterDiffResult($diff));
+  }
+
+  public function testFilterDiffResultOnlyWithNoMatch(): void {
+    $diff = [
+      'new' => ['system.site' => 'h1'],
+      'changed' => ['system.date' => 'h2'],
+      'deleted' => ['system.performance'],
+      'unchanged_count' => 10,
+    ];
+    $result = $this->service->filterDiffResult($diff, 'webform.*');
+    $this->assertSame([], $result['new']);
+    $this->assertSame([], $result['changed']);
+    $this->assertSame([], $result['deleted']);
+  }
+
 }
