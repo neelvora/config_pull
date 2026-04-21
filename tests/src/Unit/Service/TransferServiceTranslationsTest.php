@@ -28,9 +28,6 @@ final class TransferServiceTranslationsTest extends TestCase {
 
   private vfsStreamDirectory $root;
 
-  /**
-   *
-   */
   protected function setUp(): void {
     parent::setUp();
     $this->client = $this->createMock(RemoteClient::class);
@@ -39,9 +36,6 @@ final class TransferServiceTranslationsTest extends TestCase {
     $this->root = vfsStream::setup('config_sync');
   }
 
-  /**
-   *
-   */
   public function testPullWithTranslationsPassesFlagToClient(): void {
     $syncDir = vfsStream::url('config_sync');
 
@@ -63,9 +57,6 @@ final class TransferServiceTranslationsTest extends TestCase {
     $this->assertSame(0, $result['new']);
   }
 
-  /**
-   *
-   */
   public function testPullDownloadsCollectionItems(): void {
     $syncDir = vfsStream::url('config_sync');
 
@@ -103,9 +94,6 @@ final class TransferServiceTranslationsTest extends TestCase {
     $this->assertSame("name: Sitio\n", file_get_contents($syncDir . '/language/es/system.site.yml'));
   }
 
-  /**
-   *
-   */
   public function testDryRunWithTranslationsIncludesCollectionCount(): void {
     $syncDir = vfsStream::url('config_sync');
 

@@ -26,16 +26,10 @@ class RemoteClient {
     private readonly ClientInterface $httpClient,
   ) {}
 
-  /**
-   *
-   */
   public function setAliasManager(SiteAliasManagerInterface $aliasManager): void {
     $this->aliasManager = $aliasManager;
   }
 
-  /**
-   *
-   */
   public function getRemoteConfig(string $remoteName): array {
     $name = ltrim($remoteName, '@');
     $remotes = Settings::get('config_pull_remotes', []);
@@ -64,9 +58,6 @@ class RemoteClient {
     ];
   }
 
-  /**
-   *
-   */
   private function resolveAliasUri(string $aliasName, string $remoteName): string {
     if ($this->aliasManager === NULL) {
       throw new \RuntimeException("Remote '$remoteName' uses alias '$aliasName' but SiteAliasManager is not available.");
@@ -82,17 +73,11 @@ class RemoteClient {
     return $uri;
   }
 
-  /**
-   *
-   */
   public function handshake(string $remoteName): array {
     $remote = $this->getRemoteConfig($remoteName);
     return $this->sendRequest('POST', $remote, '/config-pull/handshake');
   }
 
-  /**
-   *
-   */
   public function diff(string $remoteName, array $localHashes, bool $includeTranslations = FALSE, array $collectionHashes = []): ?array {
     $remote = $this->getRemoteConfig($remoteName);
     $body = ['hashes' => $localHashes];
@@ -105,9 +90,6 @@ class RemoteClient {
     return $this->sendRequest('POST', $remote, '/config-pull/diff', $body, TRUE);
   }
 
-  /**
-   *
-   */
   public function collectionItem(string $remoteName, string $collection, string $name): array {
     $remote = $this->getRemoteConfig($remoteName);
     $nonce = bin2hex(random_bytes(32));
@@ -138,9 +120,6 @@ class RemoteClient {
     ];
   }
 
-  /**
-   *
-   */
   public function item(string $remoteName, string $name): array {
     $remote = $this->getRemoteConfig($remoteName);
     $nonce = bin2hex(random_bytes(32));
@@ -170,9 +149,6 @@ class RemoteClient {
     ];
   }
 
-  /**
-   *
-   */
   public function export(string $remoteName, array $names): string {
     $remote = $this->getRemoteConfig($remoteName);
     $path = '/config-pull/export';
@@ -202,9 +178,6 @@ class RemoteClient {
     return (string) $response->getBody();
   }
 
-  /**
-   *
-   */
   public function exportFull(string $remoteName): string {
     $remote = $this->getRemoteConfig($remoteName);
     $path = '/config-pull/export/full';
@@ -231,9 +204,6 @@ class RemoteClient {
     return (string) $response->getBody();
   }
 
-  /**
-   *
-   */
   private function sendRequest(string $method, array $remote, string $path, array $body = [], bool $allow304 = FALSE): ?array {
     $bodyJson = !empty($body) ? json_encode($body, JSON_THROW_ON_ERROR) : '';
     $nonce = bin2hex(random_bytes(32));
@@ -270,9 +240,6 @@ class RemoteClient {
     return json_decode((string) $response->getBody(), TRUE);
   }
 
-  /**
-   *
-   */
   private function convertException(\Throwable $e, string $path): \RuntimeException {
     if ($e instanceof ClientException) {
       $status = $e->getResponse()->getStatusCode();
@@ -298,9 +265,6 @@ class RemoteClient {
     return new \RuntimeException($e->getMessage(), 0, $e);
   }
 
-  /**
-   *
-   */
   private function computeHmac(string $method, string $path, string $timestamp, string $nonce, string $body, string $secret): string {
     $payload = implode("\n", [$method, $path, $timestamp, $nonce, $body]);
     return hash_hmac('sha256', $payload, $secret);

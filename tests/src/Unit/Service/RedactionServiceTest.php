@@ -19,33 +19,21 @@ final class RedactionServiceTest extends TestCase {
 
   private RedactionService $service;
 
-  /**
-   *
-   */
   protected function setUp(): void {
     parent::setUp();
     $this->service = new RedactionService();
   }
 
-  /**
-   *
-   */
   private function setRedactionRules(array $rules): void {
     new Settings(['config_pull' => ['redact' => $rules]]);
   }
 
-  /**
-   *
-   */
   public function testNoRulesReturnsDataUnchanged(): void {
     $this->setRedactionRules([]);
     $data = ['smtp_password' => 'secret123', 'smtp_host' => 'mail.example.com'];
     $this->assertSame($data, $this->service->redact('smtp.settings', $data));
   }
 
-  /**
-   *
-   */
   public function testExactConfigNameMatch(): void {
     $this->setRedactionRules([
       'smtp.settings' => ['smtp_password'],
@@ -57,9 +45,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertSame('mail.example.com', $result['smtp_host']);
   }
 
-  /**
-   *
-   */
   public function testWildcardConfigNameMatch(): void {
     $this->setRedactionRules([
       'key.key.*' => ['key_value'],
@@ -71,9 +56,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertSame('My Key', $result['key_label']);
   }
 
-  /**
-   *
-   */
   public function testWildcardKeyPattern(): void {
     $this->setRedactionRules([
       'system.mail' => ['*password*'],
@@ -90,9 +72,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertSame('mail.example.com', $result['host']);
   }
 
-  /**
-   *
-   */
   public function testNestedKeyRedaction(): void {
     $this->setRedactionRules([
       'smtp.settings' => ['password'],
@@ -111,9 +90,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertSame('mail.example.com', $result['connection']['host']);
   }
 
-  /**
-   *
-   */
   public function testNonMatchingConfigNameReturnsUnchanged(): void {
     $this->setRedactionRules([
       'smtp.settings' => ['smtp_password'],
@@ -122,9 +98,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertSame($data, $this->service->redact('other.config', $data));
   }
 
-  /**
-   *
-   */
   public function testMultipleRulesApply(): void {
     $this->setRedactionRules([
       'smtp.settings' => ['smtp_password'],
@@ -138,9 +111,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertSame('h', $result['host']);
   }
 
-  /**
-   *
-   */
   public function testShouldRedactEntirelyTrue(): void {
     $this->setRedactionRules([
       'mailchimp.settings' => TRUE,
@@ -148,9 +118,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertTrue($this->service->shouldRedactEntirely('mailchimp.settings'));
   }
 
-  /**
-   *
-   */
   public function testShouldRedactEntirelyFalseForKeyRules(): void {
     $this->setRedactionRules([
       'smtp.settings' => ['smtp_password'],
@@ -158,9 +125,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertFalse($this->service->shouldRedactEntirely('smtp.settings'));
   }
 
-  /**
-   *
-   */
   public function testShouldRedactEntirelyWildcard(): void {
     $this->setRedactionRules([
       'secret_module.*' => TRUE,
@@ -169,17 +133,11 @@ final class RedactionServiceTest extends TestCase {
     $this->assertFalse($this->service->shouldRedactEntirely('other_module.settings'));
   }
 
-  /**
-   *
-   */
   public function testShouldRedactEntirelyNoRules(): void {
     $this->setRedactionRules([]);
     $this->assertFalse($this->service->shouldRedactEntirely('anything'));
   }
 
-  /**
-   *
-   */
   public function testEntireRedactionRuleSkippedByRedactMethod(): void {
     $this->setRedactionRules([
       'mailchimp.settings' => TRUE,
@@ -190,9 +148,6 @@ final class RedactionServiceTest extends TestCase {
     $this->assertSame($data, $this->service->redact('mailchimp.settings', $data));
   }
 
-  /**
-   *
-   */
   public function testEmptyDataArray(): void {
     $this->setRedactionRules([
       'smtp.settings' => ['password'],

@@ -47,9 +47,6 @@ final class ConfigPullController implements ContainerInjectionInterface {
     );
   }
 
-  /**
-   *
-   */
   public function handshake(Request $request): JsonResponse {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -79,9 +76,6 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return new JsonResponse($data);
   }
 
-  /**
-   *
-   */
   public function diff(Request $request): JsonResponse {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -157,9 +151,6 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return new JsonResponse($data);
   }
 
-  /**
-   *
-   */
   public function item(Request $request, string $name): Response {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -189,9 +180,6 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return $response;
   }
 
-  /**
-   *
-   */
   public function export(Request $request): Response {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -234,9 +222,6 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return $response;
   }
 
-  /**
-   *
-   */
   public function exportFull(Request $request): Response {
     $start = microtime(TRUE);
     $authResult = $this->auth->validateRequest($request);
@@ -262,9 +247,6 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return $response;
   }
 
-  /**
-   *
-   */
   private function computeCollectionDiffs(array $clientCollections): array {
     $result = [];
     $serverCollections = $this->exportService->listCollections();
@@ -333,9 +315,6 @@ final class ConfigPullController implements ContainerInjectionInterface {
     return new JsonResponse(['error' => $authResult['error']], $code);
   }
 
-  /**
-   *
-   */
   private function requireJsonContentType(Request $request): bool {
     $contentType = $request->headers->get('Content-Type', '');
     return str_starts_with($contentType, 'application/json');

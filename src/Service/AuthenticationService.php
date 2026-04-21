@@ -163,9 +163,6 @@ class AuthenticationService {
     return FALSE;
   }
 
-  /**
-   *
-   */
   private function ipInCidr(string $ip, string $cidr): bool {
     [$subnet, $bits] = explode('/', $cidr, 2);
     $bits = (int) $bits;
@@ -185,16 +182,10 @@ class AuthenticationService {
     return ['valid' => FALSE, 'code' => $code, 'error' => $error, 'detail' => $detail];
   }
 
-  /**
-   *
-   */
   private function registerAuthFailure(string $ip): void {
     $this->flood->register(self::FLOOD_AUTH_FAIL, 300, $ip);
   }
 
-  /**
-   *
-   */
   private function getNonceStore(): KeyValueStoreExpirableInterface {
     if (!isset($this->nonceStore)) {
       $this->nonceStore = $this->keyValueExpirableFactory->get(self::NONCE_COLLECTION);

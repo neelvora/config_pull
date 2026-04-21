@@ -25,22 +25,16 @@ final class ConfigChangeSubscriberTest extends TestCase {
   private StateInterface $state;
   private ConfigChangeSubscriber $subscriber;
 
-  /**
-   *
-   */
   protected function setUp(): void {
     parent::setUp();
     $this->cacheTagsInvalidator = $this->createMock(CacheTagsInvalidatorInterface::class);
     $this->state = $this->createMock(StateInterface::class);
     $this->subscriber = new ConfigChangeSubscriber(
-      $this->cacheTagsInvalidator,
-      $this->state,
+    $this->cacheTagsInvalidator,
+    $this->state,
     );
   }
 
-  /**
-   *
-   */
   public function testSubscribedEvents(): void {
     $events = ConfigChangeSubscriber::getSubscribedEvents();
     $this->assertArrayHasKey(ConfigEvents::SAVE, $events);
@@ -48,9 +42,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->assertArrayHasKey(ConfigEvents::RENAME, $events);
   }
 
-  /**
-   *
-   */
   public function testSaveInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')
       ->with('config_pull.hash_version')
@@ -68,9 +59,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigChange($event);
   }
 
-  /**
-   *
-   */
   public function testDeleteInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')->willReturn(0);
 
@@ -86,9 +74,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigChange($event);
   }
 
-  /**
-   *
-   */
   public function testRenameInvalidatesTagsAndBumpsVersion(): void {
     $this->state->method('get')->willReturn(10);
 
@@ -104,9 +89,6 @@ final class ConfigChangeSubscriberTest extends TestCase {
     $this->subscriber->onConfigRename($event);
   }
 
-  /**
-   *
-   */
   public function testVersionDefaultsToZeroWhenNotSet(): void {
     $this->state->method('get')->willReturn(NULL);
 

@@ -22,9 +22,6 @@ final class ResponseSubscriber implements EventSubscriberInterface {
     ];
   }
 
-  /**
-   *
-   */
   public function onKernelResponse(ResponseEvent $event): void {
     $route = $event->getRequest()->attributes->get('_route', '');
     if (!str_starts_with($route, 'config_pull.')) {

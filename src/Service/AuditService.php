@@ -52,9 +52,6 @@ class AuditService {
     }
   }
 
-  /**
-   *
-   */
   private function getLogger(): LoggerInterface {
     if (!isset($this->logger)) {
       $this->logger = $this->loggerFactory->get('config_pull');

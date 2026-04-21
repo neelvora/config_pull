@@ -16,9 +16,6 @@ class ConfigDiffService {
     private readonly ConfigHashService $hashService,
   ) {}
 
-  /**
-   *
-   */
   public function computeLocalHashes(string $syncDir, ?string $onlyPattern = NULL, ?string $excludePattern = NULL): array {
     if (!is_dir($syncDir)) {
       throw new \InvalidArgumentException("Sync directory does not exist: $syncDir");
@@ -44,9 +41,6 @@ class ConfigDiffService {
     return $hashes;
   }
 
-  /**
-   *
-   */
   public function buildDiffResult(array $localHashes, array $serverResponse): array {
     return [
       'new' => $serverResponse['new'] ?? [],
@@ -56,9 +50,6 @@ class ConfigDiffService {
     ];
   }
 
-  /**
-   *
-   */
   public function filterDiffResult(array $diffResult, ?string $onlyPattern = NULL, ?string $excludePattern = NULL): array {
     if ($onlyPattern === NULL && $excludePattern === NULL) {
       return $diffResult;
@@ -80,9 +71,6 @@ class ConfigDiffService {
     ];
   }
 
-  /**
-   *
-   */
   private function matchesFilter(string $name, ?string $onlyPattern, ?string $excludePattern): bool {
     if ($onlyPattern !== NULL && !fnmatch($onlyPattern, $name)) {
       return FALSE;
@@ -93,9 +81,6 @@ class ConfigDiffService {
     return TRUE;
   }
 
-  /**
-   *
-   */
   public function computeLocalCollectionHashes(string $syncDir): array {
     $collectionHashes = [];
     $languageDir = $syncDir . '/language';

@@ -19,9 +19,6 @@ final class FullPipelineIntegrationTest extends KernelTestBase {
 
   private string $secret = 'integration-test-secret-64chars-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
-  /**
-   *
-   */
   protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['system']);
@@ -36,9 +33,6 @@ final class FullPipelineIntegrationTest extends KernelTestBase {
     new Settings($settings);
   }
 
-  /**
-   *
-   */
   public function testFullRoundTrip(): void {
     $kernel = $this->container->get('http_kernel');
 
@@ -68,9 +62,6 @@ final class FullPipelineIntegrationTest extends KernelTestBase {
     $this->assertSame(304, $response->getStatusCode());
   }
 
-  /**
-   *
-   */
   public function testDiffDetectsChangedConfig(): void {
     $kernel = $this->container->get('http_kernel');
 
@@ -81,9 +72,6 @@ final class FullPipelineIntegrationTest extends KernelTestBase {
     $this->assertArrayHasKey('system.site', $diff['changed']);
   }
 
-  /**
-   *
-   */
   public function testDiffDetectsDeletedConfig(): void {
     $kernel = $this->container->get('http_kernel');
 
@@ -94,9 +82,6 @@ final class FullPipelineIntegrationTest extends KernelTestBase {
     $this->assertContains('nonexistent.config.item', $diff['deleted']);
   }
 
-  /**
-   *
-   */
   public function testExportReturnsTarGz(): void {
     $kernel = $this->container->get('http_kernel');
 
@@ -106,9 +91,6 @@ final class FullPipelineIntegrationTest extends KernelTestBase {
     $this->assertStringContainsString('gzip', $response->headers->get('Content-Type'));
   }
 
-  /**
-   *
-   */
   public function testInvalidAuthReturnsError(): void {
     $kernel = $this->container->get('http_kernel');
 
@@ -123,9 +105,6 @@ final class FullPipelineIntegrationTest extends KernelTestBase {
     $this->assertContains($response->getStatusCode(), [401, 403]);
   }
 
-  /**
-   *
-   */
   private function signedRequest(string $method, string $path, string $body = ''): Request {
     $timestamp = (string) time();
     $nonce = bin2hex(random_bytes(32));

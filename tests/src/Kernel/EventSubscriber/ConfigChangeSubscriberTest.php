@@ -15,17 +15,11 @@ final class ConfigChangeSubscriberTest extends KernelTestBase {
 
   protected static $modules = ['system', 'config_pull'];
 
-  /**
-   *
-   */
   protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['system']);
   }
 
-  /**
-   *
-   */
   public function testSavingConfigBumpsHashVersion(): void {
     $state = $this->container->get('state');
     $before = (int) ($state->get('config_pull.hash_version') ?? 0);
@@ -36,9 +30,6 @@ final class ConfigChangeSubscriberTest extends KernelTestBase {
     $this->assertGreaterThan($before, $after);
   }
 
-  /**
-   *
-   */
   public function testDeletingConfigBumpsHashVersion(): void {
     $state = $this->container->get('state');
     $this->config('system.site')->set('name', 'Before Delete')->save();
