@@ -5,7 +5,9 @@ All notable changes to Config Pull will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.1] - 2026-04-21
+
+First publicly released version. The 0.1.0 tag was an internal milestone; 0.1.1 is the first version distributed via drupal.org. All 0.1.0 contents are included.
 
 ### Added
 
