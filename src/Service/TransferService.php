@@ -17,9 +17,6 @@ class TransferService {
     private readonly ConfigDiffService $diffService,
   ) {}
 
-  /**
-   *
-   */
   public function pull(string|PullOptions $remoteNameOrOptions, string $syncDir = '', ?string $onlyPattern = NULL, ?string $excludePattern = NULL, bool $dryRun = FALSE, bool $withTranslations = FALSE): array {
     if ($remoteNameOrOptions instanceof PullOptions) {
       $opts = $remoteNameOrOptions;
@@ -70,12 +67,10 @@ class TransferService {
     return $result;
   }
 
-  /**
-   *
-   */
   public function downloadAndWrite(string $remoteName, array $diffResult, string $syncDir): array {
     $written = [];
     $removed = [];
+    $toDownload = [];
 
     try {
       $toDownload = array_merge(
@@ -113,9 +108,6 @@ class TransferService {
     ];
   }
 
-  /**
-   *
-   */
   private function writeConfigFile(string $syncDir, string $name, string $yaml): void {
     $path = $syncDir . '/' . $name . '.yml';
     $dir = dirname($path);
@@ -125,9 +117,6 @@ class TransferService {
     file_put_contents($path, $yaml);
   }
 
-  /**
-   *
-   */
   private function deleteConfigFile(string $syncDir, string $name): void {
     $path = $syncDir . '/' . $name . '.yml';
     if (file_exists($path)) {
@@ -135,9 +124,6 @@ class TransferService {
     }
   }
 
-  /**
-   *
-   */
   private function downloadCollections(string $remoteName, array $collections, string $syncDir, array &$result): void {
     foreach ($collections as $collection => $collectionDiff) {
       $collectionDir = $this->collectionDir($syncDir, $collection);
@@ -160,9 +146,6 @@ class TransferService {
     }
   }
 
-  /**
-   *
-   */
   private function collectionDir(string $syncDir, string $collection): string {
     return $syncDir . '/' . str_replace('.', '/', $collection);
   }

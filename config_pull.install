@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @file
+ */
+
 declare(strict_types=1);
 
 use Drupal\Core\Site\Settings;
@@ -23,7 +27,7 @@ function config_pull_requirements(string $phase): array {
   ];
 
   if (empty($settings['server_enabled'])) {
-    $requirements['config_pull_server']['description'] = t('Set $settings[\'config_pull\'][\'server_enabled\'] = TRUE in settings.php to enable.');
+    $requirements['config_pull_server']['description'] = t("Set \$settings['config_pull']['server_enabled'] = TRUE in settings.php to enable.");
     return $requirements;
   }
 
@@ -32,7 +36,7 @@ function config_pull_requirements(string $phase): array {
     $requirements['config_pull_secret'] = [
       'title' => t('Config Pull: Shared secret'),
       'value' => t('Not configured'),
-      'description' => t('Set $settings[\'config_pull\'][\'secret\'] in settings.php.'),
+      'description' => t("Set \$settings['config_pull']['secret'] in settings.php."),
       'severity' => REQUIREMENT_ERROR,
     ];
   }
@@ -67,7 +71,7 @@ function config_pull_requirements(string $phase): array {
     'severity' => empty($allowedIps) ? REQUIREMENT_WARNING : REQUIREMENT_OK,
   ];
   if (empty($allowedIps)) {
-    $requirements['config_pull_ip']['description'] = t('Consider restricting access with $settings[\'config_pull\'][\'allowed_ips\'].');
+    $requirements['config_pull_ip']['description'] = t("Consider restricting access with \$settings['config_pull']['allowed_ips'].");
   }
 
   $redactRules = $settings['redact'] ?? [];

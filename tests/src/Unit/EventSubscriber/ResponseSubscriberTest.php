@@ -23,25 +23,16 @@ final class ResponseSubscriberTest extends TestCase {
 
   private ResponseSubscriber $subscriber;
 
-  /**
-   *
-   */
   protected function setUp(): void {
     parent::setUp();
     $this->subscriber = new ResponseSubscriber();
   }
 
-  /**
-   *
-   */
   public function testSubscribesToKernelResponse(): void {
     $events = ResponseSubscriber::getSubscribedEvents();
     $this->assertArrayHasKey(KernelEvents::RESPONSE, $events);
   }
 
-  /**
-   *
-   */
   public function testSetsSecurityHeadersOnConfigPullRoute(): void {
     $event = $this->makeEvent('config_pull.handshake');
     $this->subscriber->onKernelResponse($event);
@@ -58,9 +49,6 @@ final class ResponseSubscriberTest extends TestCase {
     $this->assertSame('no-cache', $headers->get('Pragma'));
   }
 
-  /**
-   *
-   */
   public function testDoesNotModifyNonConfigPullRoutes(): void {
     $event = $this->makeEvent('system.admin');
     $this->subscriber->onKernelResponse($event);
@@ -70,9 +58,6 @@ final class ResponseSubscriberTest extends TestCase {
     $this->assertNull($headers->get('X-Frame-Options'));
   }
 
-  /**
-   *
-   */
   public function testPropagatesRequestId(): void {
     $request = new Request();
     $request->attributes->set('_route', 'config_pull.diff');
@@ -85,20 +70,20 @@ final class ResponseSubscriberTest extends TestCase {
     $this->assertSame('req-test-123', $response->headers->get('X-Request-ID'));
   }
 
-  /**
-   *
-   */
   public function testNoRequestIdWhenNotProvided(): void {
     $event = $this->makeEvent('config_pull.export');
     $this->subscriber->onKernelResponse($event);
     $this->assertNull($event->getResponse()->headers->get('X-Request-ID'));
   }
 
-  /**
-   *
-   */
   public function testAllConfigPullRoutesGetHeaders(): void {
-    $routes = ['config_pull.handshake', 'config_pull.diff', 'config_pull.item', 'config_pull.export', 'config_pull.export_full'];
+    $routes = [
+      'config_pull.handshake',
+      'config_pull.diff',
+      'config_pull.item',
+      'config_pull.export',
+      'config_pull.export_full',
+    ];
     foreach ($routes as $route) {
       $event = $this->makeEvent($route);
       $this->subscriber->onKernelResponse($event);
@@ -106,9 +91,6 @@ final class ResponseSubscriberTest extends TestCase {
     }
   }
 
-  /**
-   *
-   */
   private function makeEvent(string $routeName): ResponseEvent {
     $request = new Request();
     $request->attributes->set('_route', $routeName);
