@@ -1,0 +1,31 @@
+# GitLab CI for drupal.org contrib modules
+# Documentation: https://project.pages.drupalcode.org/gitlab_templates/
+#
+# This pulls in the upstream contrib template which runs:
+# - composer validate
+# - phpcs (Drupal coding standards)
+# - phpstan
+# - phpunit unit + kernel + functional tests
+# - eslint, stylelint (no JS/CSS in this module, those will pass trivially)
+# - cspell (spell check)
+# - upgrade status
+#
+# Override the default behaviour by uncommenting and editing the variables block below.
+
+include:
+  - project: $_GITLAB_TEMPLATES_REPO
+    ref: $_GITLAB_TEMPLATES_REF
+    file:
+      - "/includes/include.drupalci.main.yml"
+      - "/includes/include.drupalci.variables.yml"
+      - "/includes/include.drupalci.workflows.yml"
+
+variables:
+  # Drupal core versions to test against. The template defaults to ^11; we add ^10.3 explicitly.
+  OPT_IN_TEST_PREVIOUS_MINOR: '1'
+  OPT_IN_TEST_PREVIOUS_MAJOR: '1'
+
+  # phpcs uses the project's phpcs.xml.dist if present (it is), so no override needed.
+
+  # Skip nightwatch (no JS to test in 0.1.x).
+  SKIP_NIGHTWATCH: '1'
