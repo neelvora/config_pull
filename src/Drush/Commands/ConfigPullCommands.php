@@ -11,7 +11,7 @@ use Drupal\config_pull\Exception\RemoteNetworkException;
 use Drupal\config_pull\Exception\RemoteRateLimitException;
 use Drupal\config_pull\Exception\RemoteServerException;
 use Drupal\config_pull\Exception\TransferInterruptedException;
-use Drupal\config_pull\Drush\WizardPrompter;
+use Drupal\config_pull\Drush\WizardPrompterInterface;
 use Drupal\config_pull\Service\ConfigDiffService;
 use Drupal\config_pull\Service\RemoteClient;
 use Drupal\config_pull\Service\TransferService;
@@ -33,35 +33,23 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     setSiteAliasManager as traitSetSiteAliasManager;
   }
 
-  private ?WizardPrompter $prompter = NULL;
+  private ?WizardPrompterInterface $prompter = NULL;
 
-  /**
-   *
-   */
-  public function setPrompter(WizardPrompter $prompter): void {
+  public function setPrompter(WizardPrompterInterface $prompter): void {
     $this->prompter = $prompter;
   }
 
-  /**
-   *
-   */
-  private function prompter(): WizardPrompter {
+  private function prompter(): WizardPrompterInterface {
     if ($this->prompter === NULL) {
       $io = $this->io();
-      $this->prompter = new class($io) implements WizardPrompter {
+      $this->prompter = new class($io) implements WizardPrompterInterface {
 
         public function __construct(private readonly StyleInterface $io) {}
 
-        /**
-         *
-         */
         public function ask(string $question, ?string $default = NULL): ?string {
           return $this->io->ask($question, $default);
         }
 
-        /**
-         *
-         */
         public function confirm(string $question, bool $default = TRUE): bool {
           return $this->io->confirm($question, $default);
         }
@@ -79,28 +67,19 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     parent::__construct();
   }
 
-  /**
-   *
-   */
   public function setSiteAliasManager(SiteAliasManagerInterface $siteAliasManager): void {
     $this->traitSetSiteAliasManager($siteAliasManager);
     $this->client->setAliasManager($siteAliasManager);
   }
 
-  /**
-   *
-   */
   public static function create(ContainerInterface $container): self {
     return new self(
-      $container->get('config_pull.client'),
-      $container->get('config_pull.diff'),
-      $container->get('config_pull.transfer'),
+    $container->get('config_pull.client'),
+    $container->get('config_pull.diff'),
+    $container->get('config_pull.transfer'),
     );
   }
 
-  /**
- *
- */
   #[CLI\Command(name: 'config-pull:fetch', aliases: ['cpf'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'dry-run', description: 'Show changes without writing')]
@@ -108,7 +87,16 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
   #[CLI\Option(name: 'exclude', description: 'Glob pattern to exclude config names')]
   #[CLI\Option(name: 'format', description: 'Output format: table (default) or json')]
   #[CLI\Option(name: 'with-translations', description: 'Include config translation collections')]
-  public function pull(string $remote, array $options = ['dry-run' => FALSE, 'only' => '', 'exclude' => '', 'format' => 'table', 'with-translations' => FALSE]): void {
+  public function pull(
+    string $remote,
+    array $options = [
+      'dry-run' => FALSE,
+      'only' => '',
+      'exclude' => '',
+      'format' => 'table',
+      'with-translations' => FALSE,
+    ],
+  ): void {
     $dryRun = (bool) $options['dry-run'];
     $only = $options['only'] ?: NULL;
     $exclude = $options['exclude'] ?: NULL;
@@ -166,9 +154,6 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->success("{$result['new']} new, {$result['changed']} changed, {$result['deleted']} deleted");
   }
 
-  /**
- *
- */
   #[CLI\Command(name: 'config-pull:status', aliases: ['cps'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'only', description: 'Glob pattern to include config names')]
@@ -195,7 +180,12 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
 
     if ($serverDiff === NULL) {
       if ($options['format'] === 'json') {
-        $this->output()->writeln(json_encode(['new' => [], 'changed' => [], 'deleted' => [], 'unchanged_count' => count($localHashes)], JSON_PRETTY_PRINT));
+        $this->output()->writeln(json_encode([
+          'new' => [],
+          'changed' => [],
+          'deleted' => [],
+          'unchanged_count' => count($localHashes),
+        ], JSON_PRETTY_PRINT));
         return;
       }
       $this->io()->success('In sync. No changes.');
@@ -241,16 +231,21 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->note("$total change(s), {$diff['unchanged_count']} unchanged");
   }
 
-  /**
- *
- */
   #[CLI\Command(name: 'config-pull:diff', aliases: ['cpd'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'only', description: 'Glob pattern to include config names')]
   #[CLI\Option(name: 'exclude', description: 'Glob pattern to exclude config names')]
   #[CLI\Option(name: 'show-values', description: 'Show unified diff of changed values')]
   #[CLI\Option(name: 'format', description: 'Output format: table (default) or json')]
-  public function diff(string $remote, array $options = ['only' => '', 'exclude' => '', 'show-values' => FALSE, 'format' => 'table']): void {
+  public function diff(
+    string $remote,
+    array $options = [
+      'only' => '',
+      'exclude' => '',
+      'show-values' => FALSE,
+      'format' => 'table',
+    ],
+  ): void {
     $only = $options['only'] ?: NULL;
     $exclude = $options['exclude'] ?: NULL;
     $showValues = (bool) $options['show-values'];
@@ -336,9 +331,6 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->note("$totalChanges difference(s)");
   }
 
-  /**
-   *
-   */
   private function computeValueDiffs(string $remote, string $syncDir, array $diff): array {
     $diffs = [];
     $differ = new Differ(new UnifiedDiffOutputBuilder('', FALSE));
@@ -368,9 +360,6 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     return $diffs;
   }
 
-  /**
-   *
-   */
   private function batchFetchRemoteYamls(string $remote, array $names): array {
     try {
       $tarGzContent = $this->client->export($remote, $names);
@@ -404,9 +393,6 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     return $yamls;
   }
 
-  /**
-   *
-   */
   private function printTruncatedDiff(string $diffText): void {
     $diffText = $this->stripControlBytes($diffText);
     $lines = explode("\n", $diffText);
@@ -427,16 +413,10 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->text("    [...$remaining more lines, pipe to a file for full output]");
   }
 
-  /**
-   *
-   */
   private function stripControlBytes(string $text): string {
     return preg_replace('/\x1B\[[0-9;]*[A-Za-z]|[\x00-\x08\x0B\x0C\x0E-\x1A\x1C-\x1F\x7F]/', '', $text);
   }
 
-  /**
-   *
-   */
   private function getSyncDir(): string {
     $syncDir = Settings::get('config_sync_directory');
     if (!$syncDir) {
@@ -448,9 +428,6 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     return $syncDir;
   }
 
-  /**
-   *
-   */
   private function formatRemoteError(\Throwable $e): string {
     return match (TRUE) {
       $e instanceof RemoteAuthenticationException => "Authentication failed. Check the shared secret in settings.php.",
@@ -461,9 +438,6 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     };
   }
 
-  /**
- *
- */
   #[CLI\Command(name: 'config-pull:setup', aliases: ['cpsetup'])]
   public function setup(): void {
     $this->io()->title('Config Pull Setup');
@@ -506,9 +480,6 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     }
   }
 
-  /**
-   *
-   */
   public function printSetupSnippets(string $remoteName, string $uri, string $secret): void {
     $this->io()->section('Server settings.php snippet');
     $this->io()->text([
