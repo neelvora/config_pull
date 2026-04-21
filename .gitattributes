@@ -1,0 +1,6 @@
+# Files excluded from release tarballs (drupal.org packager respects .gitattributes export-ignore)
+
+/tests             export-ignore
+/phpcs.xml.dist    export-ignore
+/.gitattributes    export-ignore
+/CONTRIBUTING.md   export-ignore
