@@ -5,6 +5,28 @@ All notable changes to Config Pull will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `phpcs.xml.dist` documenting Drupal coding standards exclusions for the project.
+- `SECURITY.md` describing supported versions and vulnerability reporting process.
+- `CONTRIBUTING.md` covering issue queue, coding standards, tests, and commit conventions.
+- `.gitattributes` excluding tests, phpcs config, and contributor docs from release tarballs.
+- README sections: experimental status note, both-sides install callout, support, known limitations, expanded troubleshooting.
+
+### Changed
+
+- All four Drush commands now have docblock descriptions; `drush <command> --help` no longer warns about an undefined `description` key.
+- `WizardPrompter` interface renamed to `WizardPrompterInterface` (Drupal naming convention).
+- Long array declarations split to satisfy `Drupal.Files.LineLength`.
+- `t()` calls in `config_pull.install` switched from single-quoted with escaped `\'` to double-quoted (Drupal coding standard).
+- `TransferService::downloadAndWrite()` initializes `$toDownload = []` before the try block (phpstan).
+
+### Fixed
+
+- `drush <config-pull command> --help` no longer emits `[warning] Undefined array key "description"`.
+
 ## [0.1.0] - 2026-04-20
 
 First public release. Production-ready for the documented surface.
