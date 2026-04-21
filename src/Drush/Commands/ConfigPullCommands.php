@@ -80,6 +80,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     );
   }
 
+  /**
+   * Fetch configuration changes from a remote site into the sync directory.
+   */
   #[CLI\Command(name: 'config-pull:fetch', aliases: ['cpf'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'dry-run', description: 'Show changes without writing')]
@@ -154,6 +157,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->success("{$result['new']} new, {$result['changed']} changed, {$result['deleted']} deleted");
   }
 
+  /**
+   * Show which configuration items differ between a remote and the local sync directory.
+   */
   #[CLI\Command(name: 'config-pull:status', aliases: ['cps'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'only', description: 'Glob pattern to include config names')]
@@ -231,6 +237,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     $this->io()->note("$total change(s), {$diff['unchanged_count']} unchanged");
   }
 
+  /**
+   * Show field-level differences for changed configuration items between a remote and the local sync directory.
+   */
   #[CLI\Command(name: 'config-pull:diff', aliases: ['cpd'])]
   #[CLI\Argument(name: 'remote', description: 'Remote name from settings.php')]
   #[CLI\Option(name: 'only', description: 'Glob pattern to include config names')]
@@ -438,6 +447,9 @@ final class ConfigPullCommands extends DrushCommands implements SiteAliasManager
     };
   }
 
+  /**
+   * Interactive wizard that produces settings.php snippets for server and client sites.
+   */
   #[CLI\Command(name: 'config-pull:setup', aliases: ['cpsetup'])]
   public function setup(): void {
     $this->io()->title('Config Pull Setup');
