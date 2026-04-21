@@ -12,6 +12,8 @@ Config Pull lets a client site fetch only the configuration items it asks for, s
 
 **0.1.0**, first public release. Production-ready for the documented surface (handshake, diff, fetch, transfer, dry-run, selective, with-translations, multisite). See `CHANGELOG.md`.
 
+The module ships marked as `experimental` in `config_pull.info.yml` for the 0.1.x series. Drupal core will print a warning on the status report about experimental modules being installed; this is expected. The marker will be removed when the module reaches 1.0 on drupal.org.
+
 ## Audience
 
 This README has two halves. The first half is for developers and site builders adopting the module. The second half (after the divider) is for security reviewers evaluating whether to allow this module in a production environment.
@@ -29,12 +31,14 @@ This README has two halves. The first half is for developers and site builders a
 
 ## Install
 
+The module installs on **both** sites that participate in a pull: the *server* site (the one publishing config) and the *client* site (the one fetching it). Same package, different settings on each side.
+
 ```bash
 composer require drupal/config_pull
 drush en config_pull
 ```
 
-The module installs on both the server site (the one publishing config) and the client site (the one pulling config). Same module, different settings.
+Run the same two commands on each site. Then configure the relevant half (server-side keys on the server, remote definitions on the client) per the sections below.
 
 ## Five-minute setup
 
@@ -163,11 +167,28 @@ What does not get transferred:
 
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
+| `Remote 'X' is not defined in settings.php. Available:` | `$settings['config_pull_remotes']` is unset on the client | Add the remote block under Manual configuration above; clear cache (`drush cr`) |
 | `401 Unauthorized` | Secret mismatch, clock skew > 5 min, or replayed request | Verify `secret` matches on both sides; check `date` on both servers; nonces are single-use |
-| `403 Forbidden` | Source IP not in `allowed_ips` | Add the client's egress IP to `$settings['config_pull']['allowed_ips']` |
+| `403 Forbidden` | Source IP not in `allowed_ips`, or `server_enabled` is false | Add the client's egress IP to `$settings['config_pull']['allowed_ips']`, or set `server_enabled => TRUE` |
 | `429 Too Many Requests` | Rate limit hit | Increase `rate_limit_per_minute` or wait one minute |
 | `Server does not support translations` | Server is on an older module version | Upgrade the server to >= 0.1.0 |
+| `Cannot connect to the remote` | Wrong URI, DNS failure, or network blocked | Verify URI scheme + host, try `curl -I` from the client host |
+| Status report shows "experimental modules installed" | Expected for 0.1.x | Will be removed at 1.0; safe to ignore in the meantime |
 | Full export is slow at 3000+ items | Known limitation, see `CHANGELOG.md` | Use selective `--only` filters; streaming gzip is planned for 0.2.0 |
+
+## Support
+
+- **Bugs and feature requests:** the project issue queue at https://www.drupal.org/project/issues/config_pull (preferred). Please include Drupal core version, PHP version, Drush version, and the exact command that failed.
+- **Security issues:** do not file public issues. See the section at the end of this README.
+- **Questions:** the `#contribute` and `#config-management` channels on the Drupal Slack are good first stops; tag with `config_pull` so the maintainer sees it.
+
+## Known limitations (0.1.0)
+
+- No web UI. All operations are Drush commands. A UI is not on the 1.0 roadmap.
+- Single-secret model: rotating the shared secret requires a coordinated update on both sides. A grace-period two-secret model is planned post-1.0.
+- Full export is read into memory before streaming. Bounded by `max_export_bytes` (default 50 MB). Streaming gzip is planned for 0.2.0 and will lift this constraint.
+- The server can only expose its *active* configuration. Items in `config/install` or `config/optional` are not transferred.
+- Drupal 10.3+ and 11.x are the only supported core versions. There are no plans to support older cores.
 
 ## Performance
 
