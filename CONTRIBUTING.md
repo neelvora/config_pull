@@ -1,6 +1,6 @@
 # Contributing to Config Pull
 
-Thank you for considering a contribution. This document covers the basics; see `local-notes/` in the maintainer's working tree for deeper context (not shipped).
+Thanks for considering a contribution. This document covers the basics for filing issues, submitting patches, and running the test suite locally.
 
 ## Where to file things
 
@@ -37,7 +37,7 @@ cd web/modules/contrib/config_pull
 
 - All non-trivial changes need test coverage. Bug fixes need a regression test.
 - Unit tests live in `tests/src/Unit/`, kernel tests in `tests/src/Kernel/`.
-- The full suite runs in under a minute on a single Lando container; please run it before submitting.
+- The full suite typically runs in under a minute. Please run it before submitting.
 
 ## Commit messages
 
@@ -45,13 +45,17 @@ cd web/modules/contrib/config_pull
 - Subject line: 72 chars or less, area prefix preferred (`auth: ...`, `transfer: ...`, `docs: ...`, `tests: ...`).
 - No multi-paragraph bodies unless the change genuinely needs them.
 
-## What we will probably not accept
+## Out of scope
 
-- New features that add a UI in 0.1.x (no UI is planned before 1.0).
-- Refactors without a behavioral payoff.
-- Dependencies on packages not already in Drupal core's dependency closure, unless there is a strong case.
+These areas are unlikely to land without prior discussion in the issue queue:
+
+- A web UI in the 0.1.x series. The module is Drush-driven by design for now.
+- Refactors without a behavioral or measurable maintainability payoff.
+- New runtime dependencies outside Drupal core's existing dependency closure.
 - Support for Drupal cores older than 10.3.
+
+If you have a use case that touches one of these, please open an issue first to discuss the approach.
 
 ## Roadmap
 
-The maintainer's near-term priorities are tracked in the project issue queue with the `roadmap` tag. Streaming gzip for full export (the headline 0.2.0 item) is the only feature we have publicly committed to before 1.0.
+Near-term priorities are tracked in the project issue queue with the `roadmap` tag.
